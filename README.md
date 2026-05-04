@@ -31,7 +31,7 @@ O sistema resolve problemas de inconsistência de dados e processos manuais, ofe
 ### 1. Clonar o repositório
 
 ```bash
-git clone https://github.com/SEU-USUARIO/sgcm-backend.git
+git clone https://github.com/HiraV1/sgcm-backend.git
 cd sgcm-backend
 ```
 
