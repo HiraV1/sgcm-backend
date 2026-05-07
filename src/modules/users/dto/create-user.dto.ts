@@ -1,10 +1,11 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import {
   IsEmail,
   IsEnum,
   IsNotEmpty,
   IsOptional,
   MinLength,
+  ValidateIf,
+  Length,
 } from 'class-validator';
 import { UserType } from '../enums/user-type.enum';
 
@@ -22,12 +23,15 @@ export class CreateUserDto {
   type!: UserType;
 
   @IsOptional()
-  accesLevel?: string;
+  accessLevel?: number;
 
-  @IsOptional()
+  @ValidateIf((o: CreateUserDto) => o.type === UserType.DOCTOR)
+  @IsNotEmpty()
   crm?: string;
 
-  @IsOptional()
+  @ValidateIf((o: CreateUserDto) => o.type === UserType.PATIENT)
+  @IsNotEmpty()
+  @Length(11, 11)
   cpf?: string;
 
   @IsOptional()

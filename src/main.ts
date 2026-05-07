@@ -2,9 +2,10 @@ import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  await app.listen(process.env.PORT ?? 3000);
 
   /* Responsavel pela validação automática dos dados que chegam para as DTOs.
   Antes de enviar para o controller/service
@@ -22,5 +23,16 @@ async function bootstrap() {
   /* Controla o que sai da API por exemplo o @Exclude() no user.entity.ts,
   então quando o JSON de resposta for enviado ele vai excluir aquele campo na resposta */
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+
+  const config = new DocumentBuilder()
+    .setTitle('SGCM API')
+    .setDescription('Sistema de Gestão de Clínica Médica')
+    .setVersion('1.0')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
+
+  await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

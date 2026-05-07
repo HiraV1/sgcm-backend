@@ -5,5 +5,5 @@ import { UserType } from '../enums/user-type.enum';
 @ChildEntity(UserType.ADMIN)
 export class AdminEntity extends UserEntity {
   @Column()
-  acessLevel!: number;
+  accessLevel!: number;
 }

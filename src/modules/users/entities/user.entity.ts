@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   TableInheritance,
 } from 'typeorm';
+import { Exclude } from 'class-transformer';
 
 import { UserType } from '../enums/user-type.enum';
 
@@ -21,6 +22,7 @@ export class UserEntity {
   @Column({ unique: true })
   email!: string;
 
+  @Exclude()
   @Column()
   password!: string;
 
@@ -30,6 +32,7 @@ export class UserEntity {
   @Column({ default: true })
   isActive!: boolean;
 
+  @Exclude()
   @Column({ nullable: true })
   refreshToken?: string;
 
@@ -38,4 +41,12 @@ export class UserEntity {
 
   @UpdateDateColumn()
   updatedAt!: Date;
+
+  activate(): void {
+    this.isActive = true;
+  }
+
+  deactivate(): void {
+    this.isActive = false;
+  }
 }

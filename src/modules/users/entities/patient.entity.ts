@@ -4,7 +4,7 @@ import { UserType } from '../enums/user-type.enum';
 
 @ChildEntity(UserType.PATIENT)
 export class PatientEntity extends UserEntity {
-  @Column()
+  @Column({ unique: true })
   cpf!: string;
 
   @Column({ type: 'date' })
