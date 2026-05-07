@@ -76,10 +76,10 @@ npm run start:dev
 ### 5. Acessar a API
 
 **Aplicação:**
-http://localhost:3000
+<http://localhost:3000>
 
-**Documentação Swagger (após iniciar o projeto):** 
-http://localhost:3000/api
+**Documentação Swagger (após iniciar o projeto):**
+<http://localhost:3000/api>
 
 ---
 
