@@ -16,7 +16,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PaginationQueryDto } from './dto/pagination-query.dto';
 
-import { UserEntity } from './entities/user.entity';
+import { UserResponseDto } from './dto/response/user-response.dto';
 
 @Controller('users')
 export class UsersController {
@@ -24,7 +24,7 @@ export class UsersController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  create(@Body() createUserDto: CreateUserDto): Promise<UserEntity> {
+  create(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
     return this.usersService.create(createUserDto);
   }
 
