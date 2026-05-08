@@ -10,13 +10,17 @@ import { Repository, Like } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PaginationQueryDto } from './dto/pagination-query.dto';
+import { UserResponseDto } from './dto/response/user-response.dto';
 
 import { UserEntity } from './entities/user.entity';
 import { AdminEntity } from './entities/admin.entity';
 import { DoctorEntity } from './entities/doctor.entity';
 import { PatientEntity } from './entities/patient.entity';
+
 import { UserType } from './enums/user-type.enum';
+
 import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
+import { mapUserResponse } from './utils/map-user-response';
 
 @Injectable()
 export class UsersService {
@@ -34,7 +38,7 @@ export class UsersService {
     private patientsRepository: Repository<PatientEntity>,
   ) {}
 
-  async create(createUserDto: CreateUserDto): Promise<UserEntity> {
+  async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     const { email, type } = createUserDto;
 
     const existingUser = await this.usersRepository.findOne({
@@ -90,12 +94,14 @@ export class UsersService {
         throw new BadRequestException('Invalid user type');
     }
 
-    return this.usersRepository.save(user);
+    const savedUser = await this.usersRepository.save(user);
+
+    return mapUserResponse(savedUser);
   }
 
   async findAll(
     paginationQuery: PaginationQueryDto,
-  ): Promise<PaginatedResponse<UserEntity>> {
+  ): Promise<PaginatedResponse<UserResponseDto>> {
     const { page = 1, limit = 20, sort, search } = paginationQuery;
 
     const skip = (page - 1) * limit;
@@ -127,7 +133,7 @@ export class UsersService {
     });
 
     return {
-      data: users,
+      data: users.map((user) => mapUserResponse(user)),
       meta: {
         totalItems,
         page,
@@ -137,18 +143,26 @@ export class UsersService {
     };
   }
 
-  async findOne(id: number): Promise<UserEntity> {
+  async findOne(id: number): Promise<UserResponseDto> {
     const user = await this.usersRepository.findOneBy({ id });
     /* se o User estiver inativo vai entrar aqui, então não vai mostrar no get/id ou delete/id */
     if (!user || !user.isActive) {
       throw new NotFoundException('User not found');
     }
 
-    return user;
+    return mapUserResponse(user);
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto): Promise<UserEntity> {
-    const user = await this.findOne(id);
+  async update(
+    id: number,
+    updateUserDto: UpdateUserDto,
+  ): Promise<UserResponseDto> {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
 
     if (updateUserDto.email && updateUserDto.email !== user.email) {
       const existingEmail = await this.usersRepository.findOne({
@@ -159,11 +173,16 @@ export class UsersService {
       }
     }
     Object.assign(user, updateUserDto);
-    return this.usersRepository.save(user);
+
+    const updatedUser = await this.usersRepository.save(user);
+    return mapUserResponse(updatedUser);
   }
 
   async remove(id: number): Promise<void> {
-    const user = await this.findOne(id);
+    const user = await this.usersRepository.findOneBy({ id });
+    if (!user || !user.isActive) {
+      throw new NotFoundException('User not found');
+    }
 
     user.deactivate();
 
