@@ -4,6 +4,8 @@ import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -23,6 +25,10 @@ async function bootstrap() {
   /* Controla o que sai da API por exemplo o @Exclude() no user.entity.ts,
   então quando o JSON de resposta for enviado ele vai excluir aquele campo na resposta */
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+
+  /* Responsavel por capturar as exceções não tratadas e formatar a resposta de erro
+  de forma consistente, usando o HttpExceptionFilter que criamos */
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   const config = new DocumentBuilder()
     .setTitle('SGCM API')
