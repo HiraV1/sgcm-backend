@@ -9,7 +9,7 @@ import { Repository, Like } from 'typeorm';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { PaginationQueryDto } from './dto/pagination-query.dto';
+import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { UserResponseDto } from './dto/response/user-response.dto';
 
 import { UserEntity } from './entities/user.entity';
