@@ -16,9 +16,6 @@ import { PatientEntity } from '../users/entities/patient.entity';
 import { ScheduleStatus } from './enums/schedule-status.enum';
 import { ScheduleType } from './enums/schedule-type.enum';
 
-import { CreateInPersonScheduleDto } from './dto/create/create-in-person-schedule.dto';
-import { CreateHomeScheduleDto } from './dto/create/create-home-schedule.dto';
-import { CreateOnlineScheduleDto } from './dto/create/create-online-schedule.dto';
 import { InPersonScheduleResponseDto } from './dto/response/in-person-schedule-response.dto';
 import { HomeScheduleResponseDto } from './dto/response/home-schedule-response.dto';
 import { OnlineScheduleResponseDto } from './dto/response/online-schedule-response.dto';
@@ -26,6 +23,9 @@ import { mapScheduleResponse } from './utils/map-schedule-response';
 import { ScheduleResponseBaseDto } from './dto/response/schedule-response-base.dto';
 import { FindSchedulesQueryDto } from './dto/query/find-schedules-query.dto';
 import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
+import { CreateScheduleDto } from './dto/create-schedule.dto';
+import { UpdateScheduleStatusDto } from './dto/update-schedule-status.dto';
+import { UpdateScheduleDto } from './dto/update-schedule.dto';
 
 @Injectable()
 export class SchedulesService {
@@ -68,7 +68,7 @@ export class SchedulesService {
   }
 
   async createInPerson(
-    dto: CreateInPersonScheduleDto,
+    dto: CreateScheduleDto,
   ): Promise<InPersonScheduleResponseDto> {
     if (dto.scheduledAt <= new Date()) {
       throw new BadRequestException('Scheduled date must be in the future');
@@ -95,9 +95,7 @@ export class SchedulesService {
     return new InPersonScheduleResponseDto(savedInPersonSchedule);
   }
 
-  async createHome(
-    dto: CreateHomeScheduleDto,
-  ): Promise<HomeScheduleResponseDto> {
+  async createHome(dto: CreateScheduleDto): Promise<HomeScheduleResponseDto> {
     if (dto.scheduledAt <= new Date()) {
       throw new BadRequestException('Schedule date must be in the future');
     }
@@ -123,10 +121,16 @@ export class SchedulesService {
   }
 
   async createOnline(
-    dto: CreateOnlineScheduleDto,
+    dto: CreateScheduleDto,
   ): Promise<OnlineScheduleResponseDto> {
     if (dto.scheduledAt <= new Date()) {
       throw new BadRequestException('Schedule date must be in the future');
+    }
+
+    if (!dto.accessLink || !dto.platform) {
+      throw new BadRequestException(
+        'Access link and platform are required for online schedules',
+      );
     }
 
     const { doctor, patient } = await this.validateUsers(
@@ -237,11 +241,103 @@ export class SchedulesService {
     return mapScheduleResponse(schedule);
   }
 
-  /*update(id: number, updateScheduleDto: UpdateScheduleDto) {
-    return `This action updates a #${id} schedule`;
-  }*/
+  private isValidStatusTransition(
+    currentStatus: ScheduleStatus,
+    nextStatus: ScheduleStatus,
+  ): boolean {
+    const validTransitions: Partial<Record<ScheduleStatus, ScheduleStatus[]>> =
+      {
+        [ScheduleStatus.PENDING]: [
+          ScheduleStatus.CONFIRMED,
+          ScheduleStatus.CANCELLED,
+        ],
 
-  remove(id: number) {
-    return `This action removes a #${id} schedule`;
+        [ScheduleStatus.CONFIRMED]: [ScheduleStatus.CANCELLED],
+      };
+
+    return validTransitions[currentStatus]?.includes(nextStatus) ?? false;
+  }
+
+  async updateStatus(
+    id: number,
+    updateScheduleStatusDto: UpdateScheduleStatusDto,
+  ): Promise<ScheduleResponseBaseDto> {
+    const schedule = await this.scheduleRepository.findOne({
+      where: { id },
+      relations: ['doctor', 'patient'],
+    });
+
+    if (!schedule) {
+      throw new NotFoundException(`Schedule not found with ID ${id}`);
+    }
+
+    if (updateScheduleStatusDto.status === ScheduleStatus.COMPLETED) {
+      throw new BadRequestException(
+        'Cannot update status to COMPLETED manually',
+      );
+    }
+
+    const isValidTransition = this.isValidStatusTransition(
+      schedule.status,
+      updateScheduleStatusDto.status,
+    );
+
+    if (!isValidTransition) {
+      throw new BadRequestException(
+        `Transition from ${schedule.status} to ${updateScheduleStatusDto.status} is not allowed`,
+      );
+    }
+
+    schedule.status = updateScheduleStatusDto.status;
+
+    if (updateScheduleStatusDto.status === ScheduleStatus.CANCELLED) {
+      schedule.cancelledAt = new Date();
+      schedule.cancellationReason =
+        updateScheduleStatusDto.cancellationReason ?? 'No reason provided';
+    }
+
+    const updatedSchedule = await this.scheduleRepository.save(schedule);
+
+    return mapScheduleResponse(updatedSchedule);
+  }
+
+  async update(
+    id: number,
+    updateScheduleDto: UpdateScheduleDto,
+  ): Promise<ScheduleResponseBaseDto> {
+    const schedule = await this.scheduleRepository.findOne({
+      where: { id },
+      relations: ['doctor', 'patient'],
+    });
+
+    if (!schedule) {
+      throw new NotFoundException(`Schedule not found with ID ${id}`);
+    }
+
+    if (
+      updateScheduleDto.scheduledAt &&
+      updateScheduleDto.scheduledAt <= new Date()
+    ) {
+      throw new BadRequestException('Schedule date must be in the future');
+    }
+
+    Object.assign(schedule, updateScheduleDto);
+
+    const updatedSchedule = await this.scheduleRepository.save(schedule);
+
+    return mapScheduleResponse(updatedSchedule);
+  }
+
+  async remove(id: number): Promise<void> {
+    const schedule = await this.scheduleRepository.findOneBy({ id });
+    if (!schedule) {
+      throw new NotFoundException(`Schedule not found with ID ${id}`);
+    }
+
+    if (schedule.status === ScheduleStatus.COMPLETED) {
+      throw new BadRequestException('Completed schedules cannot be cancelled');
+    }
+
+    await this.scheduleRepository.remove(schedule);
   }
 }
