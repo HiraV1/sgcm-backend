@@ -3,10 +3,14 @@ import { ScheduleResponseBaseDto } from './schedule-response-base.dto';
 import { OnlineScheduleEntity } from '../../entities/online-schedule.entity';
 
 export class OnlineScheduleResponseDto extends ScheduleResponseBaseDto {
-  @ApiProperty()
+  @ApiProperty({
+    example: 'https://meet.google.com/abc-defg',
+  })
   accessLink!: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    example: 'Google Meet',
+  })
   platform!: string;
 
   constructor(schedule: OnlineScheduleEntity) {
