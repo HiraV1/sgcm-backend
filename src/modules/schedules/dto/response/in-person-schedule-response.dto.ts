@@ -3,10 +3,14 @@ import { ScheduleResponseBaseDto } from './schedule-response-base.dto';
 import { InPersonScheduleEntity } from '../../entities/in-person-schedule.entity';
 
 export class InPersonScheduleResponseDto extends ScheduleResponseBaseDto {
-  @ApiProperty()
+  @ApiProperty({
+    example: 'Room 204',
+  })
   room!: string;
 
-  @ApiProperty()
+  @ApiProperty({
+    example: 'Main Clinic Unit',
+  })
   unit!: string;
 
   constructor(schedule: InPersonScheduleEntity) {

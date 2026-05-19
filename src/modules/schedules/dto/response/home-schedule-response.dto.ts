@@ -1,12 +1,16 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ScheduleResponseBaseDto } from './schedule-response-base.dto';
 import { HomeScheduleEntity } from '../../entities/home-schedule.entity';
 
 export class HomeScheduleResponseDto extends ScheduleResponseBaseDto {
-  @ApiProperty()
+  @ApiProperty({
+    example: '123 Main Street, Apartment 45',
+  })
   fullAddress!: string;
 
-  @ApiProperty({ required: false })
+  @ApiPropertyOptional({
+    example: 'Ring the bell twice',
+  })
   accessNotes?: string;
 
   constructor(schedule: HomeScheduleEntity) {
