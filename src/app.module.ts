@@ -4,11 +4,13 @@ import { AppService } from './app.service';
 import { UsersModule } from './modules/users/users.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SpecialtiesModule } from './modules/specialties/specialties.module';
+import { SchedulesModule } from './modules/schedules/schedules.module';
 
 @Module({
   imports: [
-    SpecialtiesModule,
     UsersModule,
+    SpecialtiesModule,
+    SchedulesModule,
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'database.sqlite',

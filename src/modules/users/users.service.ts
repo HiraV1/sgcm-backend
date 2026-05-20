@@ -26,16 +26,16 @@ import { mapUserResponse } from './utils/map-user-response';
 export class UsersService {
   constructor(
     @InjectRepository(UserEntity)
-    private usersRepository: Repository<UserEntity>,
+    private readonly usersRepository: Repository<UserEntity>,
 
     @InjectRepository(AdminEntity)
-    private adminsRepository: Repository<AdminEntity>,
+    private readonly adminsRepository: Repository<AdminEntity>,
 
     @InjectRepository(DoctorEntity)
-    private doctorsRepository: Repository<DoctorEntity>,
+    private readonly doctorsRepository: Repository<DoctorEntity>,
 
     @InjectRepository(PatientEntity)
-    private patientsRepository: Repository<PatientEntity>,
+    private readonly patientsRepository: Repository<PatientEntity>,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
