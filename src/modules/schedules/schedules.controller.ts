@@ -96,14 +96,7 @@ export class SchedulesController {
     description: 'Schedule conflict detected',
   })
   create(@Body() createScheduleDto: CreateScheduleDto) {
-    switch (createScheduleDto.type) {
-      case ScheduleType.IN_PERSON:
-        return this.schedulesService.createInPerson(createScheduleDto);
-      case ScheduleType.ONLINE:
-        return this.schedulesService.createOnline(createScheduleDto);
-      case ScheduleType.HOME:
-        return this.schedulesService.createHome(createScheduleDto);
-    }
+    return this.schedulesService.create(createScheduleDto);
   }
 
   @Get()

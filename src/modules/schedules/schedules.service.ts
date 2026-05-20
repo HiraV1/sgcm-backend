@@ -67,13 +67,65 @@ export class SchedulesService {
     return { doctor, patient };
   }
 
-  async createInPerson(
-    dto: CreateScheduleDto,
-  ): Promise<InPersonScheduleResponseDto> {
-    if (dto.scheduledAt <= new Date()) {
-      throw new BadRequestException('Scheduled date must be in the future');
+  private validateScheduleTypeFields(dto: CreateScheduleDto): void {
+    switch (dto.type) {
+      case ScheduleType.IN_PERSON:
+        if (!dto.room || !dto.unit) {
+          throw new BadRequestException(
+            'room and unit are required for IN_PERSON schedules',
+          );
+        }
+        break;
+
+      case ScheduleType.ONLINE:
+        if (!dto.accessLink || !dto.platform) {
+          throw new BadRequestException(
+            'accessLink and platform are required for ONLINE schedules',
+          );
+        }
+        break;
+
+      case ScheduleType.HOME:
+        if (!dto.fullAddress) {
+          throw new BadRequestException(
+            'fullAddress is required for HOME schedules',
+          );
+        }
+        break;
+    }
+  }
+
+  private validateFutureDate(scheduledAt: string | Date): void {
+    const scheduleDate = new Date(scheduledAt);
+
+    if (isNaN(scheduleDate.getTime())) {
+      throw new BadRequestException('Invalid schedule date');
     }
 
+    if (scheduleDate <= new Date()) {
+      throw new BadRequestException('Schedule date must be in the future');
+    }
+  }
+
+  async create(
+    createScheduleDto: CreateScheduleDto,
+  ): Promise<ScheduleResponseBaseDto> {
+    this.validateFutureDate(createScheduleDto.scheduledAt);
+    this.validateScheduleTypeFields(createScheduleDto);
+
+    switch (createScheduleDto.type) {
+      case ScheduleType.HOME:
+        return this.createHome(createScheduleDto);
+      case ScheduleType.IN_PERSON:
+        return this.createInPerson(createScheduleDto);
+      case ScheduleType.ONLINE:
+        return this.createOnline(createScheduleDto);
+    }
+  }
+
+  private async createInPerson(
+    dto: CreateScheduleDto,
+  ): Promise<InPersonScheduleResponseDto> {
     const { doctor, patient } = await this.validateUsers(
       dto.doctorId,
       dto.patientId,
@@ -95,11 +147,9 @@ export class SchedulesService {
     return new InPersonScheduleResponseDto(savedInPersonSchedule);
   }
 
-  async createHome(dto: CreateScheduleDto): Promise<HomeScheduleResponseDto> {
-    if (dto.scheduledAt <= new Date()) {
-      throw new BadRequestException('Schedule date must be in the future');
-    }
-
+  private async createHome(
+    dto: CreateScheduleDto,
+  ): Promise<HomeScheduleResponseDto> {
     const { doctor, patient } = await this.validateUsers(
       dto.doctorId,
       dto.patientId,
@@ -120,19 +170,9 @@ export class SchedulesService {
     return new HomeScheduleResponseDto(savedHomeSchedule);
   }
 
-  async createOnline(
+  private async createOnline(
     dto: CreateScheduleDto,
   ): Promise<OnlineScheduleResponseDto> {
-    if (dto.scheduledAt <= new Date()) {
-      throw new BadRequestException('Schedule date must be in the future');
-    }
-
-    if (!dto.accessLink || !dto.platform) {
-      throw new BadRequestException(
-        'Access link and platform are required for online schedules',
-      );
-    }
-
     const { doctor, patient } = await this.validateUsers(
       dto.doctorId,
       dto.patientId,
@@ -314,11 +354,8 @@ export class SchedulesService {
       throw new NotFoundException(`Schedule not found with ID ${id}`);
     }
 
-    if (
-      updateScheduleDto.scheduledAt &&
-      updateScheduleDto.scheduledAt <= new Date()
-    ) {
-      throw new BadRequestException('Schedule date must be in the future');
+    if (updateScheduleDto.scheduledAt) {
+      this.validateFutureDate(updateScheduleDto.scheduledAt);
     }
 
     Object.assign(schedule, updateScheduleDto);
