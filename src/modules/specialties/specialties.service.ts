@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { CreateSpecialtyDto } from './dto/create-specialty.dto';
 import { UpdateSpecialtyDto } from './dto/update-specialty.dto';
@@ -84,7 +85,6 @@ export class SpecialtiesService {
     };
   }
 
-  // As outras funções (buscar uma só, atualizar, deletar) deixaremos prontas para depois!
   async findOne(id: number): Promise<SpecialtyResponseDto> {
     const specialtyReturned = await this.specialtyRepository.findOneBy({ id });
     if (!specialtyReturned) {
@@ -115,12 +115,21 @@ export class SpecialtiesService {
     return new SpecialtyResponseDto(updatedSpecialty);
   }
 
-  /* ADICIONAR REGRA DE NEGÓCIO PARA BLOQUEAR O DELETE SE HOUVER ALGUM MÉDICO ASSOCIADO */
-  async remove(id: number): Promise<void> {
-    const specialty = await this.specialtyRepository.findOneBy({ id });
+async remove(id: number) {
+    const specialty = await this.specialtyRepository.findOne({
+      where: { id },
+      relations: ['doctors'], 
+    });
+
     if (!specialty) {
-      throw new NotFoundException(`Specialty not found with ID ${id}`);
+      throw new NotFoundException('Especialidade não encontrada');
     }
-    await this.specialtyRepository.remove(specialty);
+
+    if (specialty.doctors && specialty.doctors.length > 0) {
+      throw new BadRequestException(
+        'A especialidade não pode ser apagada porque existem médicos associados a ela.',
+      );
+    }
+    return await this.specialtyRepository.remove(specialty);
   }
 }
