@@ -4,22 +4,29 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToMany,
 } from 'typeorm';
 
-@Entity('specialties') // Nome da tabela no banco de dados
+import { DoctorEntity } from '../../users/entities/doctor.entity'; 
+
+@Entity('specialties')
 export class Specialty {
-  @PrimaryGeneratedColumn() // Gera um ID único e aleatório automaticamente
+  @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column() // O nome da especialidade (ex: Cardiologia), não pode repetir
+  @Column({ unique: true })
   name!: string;
 
-  @Column({ type: 'text', nullable: true }) // Uma descrição opcional
+  @Column({ type: 'text', nullable: true })
   description!: string;
 
-  @CreateDateColumn()
+  // 👇 Adiciona este bloco de código 👇
+  @ManyToMany(() => DoctorEntity, (doctor) => doctor.specialties)
+  doctors!: DoctorEntity[];
+
+  @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
 }

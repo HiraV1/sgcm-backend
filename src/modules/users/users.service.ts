@@ -188,4 +188,40 @@ export class UsersService {
 
     await this.usersRepository.save(user);
   }
+  async addSpecialty(doctorId: number, specialtyId: number) {
+    const doctor = await this.usersRepository.manager.findOne(DoctorEntity, {
+      where: { id: doctorId },
+      relations: ['specialties'],
+    });
+
+    if (!doctor) {
+      throw new NotFoundException('Médico não encontrado.');
+    }
+
+    const alreadyHas = doctor.specialties.some((s) => s.id === specialtyId);
+    if (alreadyHas) {
+      throw new ConflictException('O médico já possui esta especialidade.');
+    }
+
+    doctor.specialties.push({ id: specialtyId } as any);
+    await this.usersRepository.manager.save(doctor);
+    
+    return { message: 'Especialidade vinculada com sucesso!' };
+  }
+
+  async removeSpecialty(doctorId: number, specialtyId: number) {
+    const doctor = await this.usersRepository.manager.findOne(DoctorEntity, {
+      where: { id: doctorId },
+      relations: ['specialties'],
+    });
+
+    if (!doctor) {
+      throw new NotFoundException('Médico não encontrado.');
+    }
+
+    doctor.specialties = doctor.specialties.filter((s) => s.id !== specialtyId);
+    await this.usersRepository.manager.save(doctor);
+    
+    return { message: 'Especialidade desvinculada com sucesso!' };
+  }
 }
