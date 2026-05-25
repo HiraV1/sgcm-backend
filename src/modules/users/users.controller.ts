@@ -159,7 +159,7 @@ export class UsersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Deactivate user by id' })
   @ApiResponse({
-    status: 200,
+    status: 204,
     description: 'User deactivated successfully',
   })
   @ApiResponse({
