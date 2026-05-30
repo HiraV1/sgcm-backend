@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -38,66 +39,69 @@ export class UsersService {
     private readonly patientsRepository: Repository<PatientEntity>,
   ) {}
 
-  async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
-    const { email, type } = createUserDto;
+async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
+  const { email, type } = createUserDto;
 
-    const existingUser = await this.usersRepository.findOne({
-      where: { email },
-    });
-    if (existingUser) {
-      throw new ConflictException('Email already in use');
-    }
-
-    let user: UserEntity;
-
-    switch (type) {
-      case UserType.ADMIN: {
-        const admin = new AdminEntity();
-        Object.assign(admin, createUserDto);
-        admin.type = UserType.ADMIN;
-        user = admin;
-        break;
-      }
-      case UserType.DOCTOR: {
-        const existingCrm = await this.doctorsRepository.findOne({
-          where: { crm: createUserDto.crm! },
-        });
-        if (existingCrm) {
-          throw new ConflictException('CRM already in use');
-        }
-
-        const doctor = new DoctorEntity();
-        Object.assign(doctor, createUserDto);
-        doctor.crm = createUserDto.crm!;
-        doctor.type = UserType.DOCTOR;
-
-        user = doctor;
-        break;
-      }
-      case UserType.PATIENT: {
-        const existingCpf = await this.patientsRepository.findOne({
-          where: { cpf: createUserDto.cpf },
-        });
-        if (existingCpf) {
-          throw new ConflictException('CPF already in use');
-        }
-
-        const patient = new PatientEntity();
-        Object.assign(patient, createUserDto);
-        patient.cpf = createUserDto.cpf!;
-        patient.type = UserType.PATIENT;
-
-        user = patient;
-        break;
-      }
-      default:
-        throw new BadRequestException('Invalid user type');
-    }
-
-    const savedUser = await this.usersRepository.save(user);
-
-    return mapUserResponse(savedUser);
+  const existingUser = await this.usersRepository.findOne({
+    where: { email },
+  });
+  if (existingUser) {
+    throw new ConflictException('Email already in use');
   }
+
+  const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+
+  let user: UserEntity;
+
+  switch (type) {
+    case UserType.ADMIN: {
+      const admin = new AdminEntity();
+      Object.assign(admin, createUserDto);
+      admin.password = hashedPassword;
+      admin.type = UserType.ADMIN;
+      user = admin;
+      break;
+    }
+    case UserType.DOCTOR: {
+      const existingCrm = await this.doctorsRepository.findOne({
+        where: { crm: createUserDto.crm! },
+      });
+      if (existingCrm) {
+        throw new ConflictException('CRM already in use');
+      }
+
+      const doctor = new DoctorEntity();
+      Object.assign(doctor, createUserDto);
+      doctor.password = hashedPassword;
+      doctor.crm = createUserDto.crm!;
+      doctor.type = UserType.DOCTOR;
+      user = doctor;
+      break;
+    }
+    case UserType.PATIENT: {
+      const existingCpf = await this.patientsRepository.findOne({
+        where: { cpf: createUserDto.cpf },
+      });
+      if (existingCpf) {
+        throw new ConflictException('CPF already in use');
+      }
+
+      const patient = new PatientEntity();
+      Object.assign(patient, createUserDto);
+      patient.password = hashedPassword;
+      patient.cpf = createUserDto.cpf!;
+      patient.type = UserType.PATIENT;
+      user = patient;
+      break;
+    }
+    default:
+      throw new BadRequestException('Invalid user type');
+  }
+
+  const savedUser = await this.usersRepository.save(user);
+
+  return mapUserResponse(savedUser);
+}
 
   async findAll(
     paginationQuery: PaginationQueryDto,
