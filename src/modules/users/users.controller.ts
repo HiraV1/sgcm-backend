@@ -169,19 +169,4 @@ export class UsersController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.remove(+id);
   }
-  @Post(':id/specialties/:specialtyId')
-  addSpecialty(
-    @Param('id') id: string,
-    @Param('specialtyId') specialtyId: string,
-  ) {
-    return this.usersService.addSpecialty(+id, +specialtyId);
-  }
-
-  @Delete(':id/specialties/:specialtyId')
-  removeSpecialty(
-    @Param('id') id: string,
-    @Param('specialtyId') specialtyId: string,
-  ) {
-    return this.usersService.removeSpecialty(+id, +specialtyId);
-  }
 }
