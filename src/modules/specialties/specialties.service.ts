@@ -12,6 +12,7 @@ import { Repository, Not, Like } from 'typeorm';
 
 import { SpecialtyResponseDto } from './dto/response/specialty-response.dto';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
+import { DoctorResponseDto } from '../users/dto/response/doctor-response.dto';
 
 import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
 
@@ -132,4 +133,32 @@ export class SpecialtiesService {
     }
     return await this.specialtyRepository.remove(specialty);
   }
+  async findDoctorsBySpecialty(
+  id: number,
+  paginationQuery: PaginationQueryDto,
+): Promise<PaginatedResponse<DoctorResponseDto>> {
+  const specialty = await this.specialtyRepository.findOne({
+    where: { id },
+    relations: ['doctors', 'doctors.specialties'],
+  });
+
+  if (!specialty) {
+    throw new NotFoundException(`Specialty not found with ID ${id}`);
+  }
+
+  const { page = 1, limit = 20 } = paginationQuery;
+  const skip = (page - 1) * limit;
+  const activeDoctors = specialty.doctors.filter((d) => d.isActive);
+  const paginated = activeDoctors.slice(skip, skip + limit);
+
+  return {
+    data: paginated.map((d) => new DoctorResponseDto(d)),
+    meta: {
+      totalItems: activeDoctors.length,
+      page,
+      limit,
+      totalPages: Math.ceil(activeDoctors.length / limit),
+    },
+  };
+}
 }
