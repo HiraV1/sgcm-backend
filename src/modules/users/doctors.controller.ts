@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
@@ -15,6 +16,7 @@ import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { DoctorResponseDto } from './dto/response/doctor-response.dto';
 import { DoctorQueryDto } from './dto/query/find-doctors-query.dto';
 import { SpecialtyResponseDto } from '../specialties/dto/response/specialty-response.dto';
+import { AddSpecialtyDto } from './dto/add-specialty.dto';
 
 @Controller('doctors')
 export class DoctorsController {
@@ -80,39 +82,31 @@ export class DoctorsController {
     return this.usersService.findDoctorSpecialties(id);
   }
 
-  @Post(':id/specialties/:specialtyId')
-  @ApiOperation({
-    summary: 'Associate specialty to doctor',
-    description: 'Associates an existing specialty to a doctor.',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Doctor ID',
-    example: 1,
-  })
-  @ApiParam({
-    name: 'specialtyId',
-    description: 'Specialty ID',
-    example: 2,
+  @Post(':id/specialties')
+  @ApiOperation({ summary: 'Associate specialty to doctor' })
+  @ApiParam({ 
+    name: 'id', 
+    description: 'Doctor ID', 
+    example: 1 
   })
   @ApiResponse({
-    status: 200,
+    status: 200, 
     description: 'Specialty associated successfully.',
-    type: DoctorResponseDto,
+    type: DoctorResponseDto 
   })
-  @ApiResponse({
-    status: 404,
-    description: 'Doctor or specialty not found.',
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Doctor or specialty not found.' 
   })
-  @ApiResponse({
+  @ApiResponse({ 
     status: 409,
-    description: 'The doctor already has this specialty.',
+    description: 'Doctor already has this specialty.' 
   })
   addSpecialty(
-    @Param('id', ParseIntPipe) id: number,
-    @Param('specialtyId', ParseIntPipe) specialtyId: number,
+  @Param('id', ParseIntPipe) id: number,
+  @Body() addSpecialtyDto: AddSpecialtyDto,
   ) {
-    return this.usersService.addSpecialty(id, specialtyId);
+    return this.usersService.addSpecialty(id, addSpecialtyDto.specialtyId);
   }
 
   @Delete(':id/specialties/:specialtyId')
