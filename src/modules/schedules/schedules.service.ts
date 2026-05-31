@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -107,6 +108,23 @@ export class SchedulesService {
     }
   }
 
+  private async checkDoctorConflict(doctorId: number, scheduledAt: Date | string): Promise<void> {
+  const conflict = await this.scheduleRepository.findOne({
+    where: {
+      doctor: { id: doctorId },
+      scheduledAt: new Date(scheduledAt),
+      status: ScheduleStatus.CONFIRMED,
+    },
+    relations: ['doctor'],
+  });
+
+  if (conflict) {
+    throw new ConflictException(
+      `Doctor with ID ${doctorId} already has a confirmed schedule at ${scheduledAt}`,
+    );
+  }
+}
+
   async create(
     createScheduleDto: CreateScheduleDto,
   ): Promise<ScheduleResponseBaseDto> {
@@ -130,6 +148,8 @@ export class SchedulesService {
       dto.doctorId,
       dto.patientId,
     );
+    
+    await this.checkDoctorConflict(dto.doctorId, dto.scheduledAt);
 
     const schedule = this.inPersonScheduleRepository.create({
       scheduledAt: dto.scheduledAt,
@@ -155,6 +175,8 @@ export class SchedulesService {
       dto.patientId,
     );
 
+    await this.checkDoctorConflict(dto.doctorId, dto.scheduledAt);
+
     const schedule = this.homeScheduleRepository.create({
       scheduledAt: dto.scheduledAt,
       fullAddress: dto.fullAddress,
@@ -177,6 +199,8 @@ export class SchedulesService {
       dto.doctorId,
       dto.patientId,
     );
+
+    await this.checkDoctorConflict(dto.doctorId, dto.scheduledAt);
 
     const schedule = this.onlineScheduleRepository.create({
       scheduledAt: dto.scheduledAt,
