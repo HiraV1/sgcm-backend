@@ -257,6 +257,12 @@ export class UsersService {
     };
   }
 
+  async findByEmail(email: string): Promise<UserEntity | null> {
+    const user = await this.usersRepository.findOneBy({ email: email });
+
+    return user;
+  }
+
   async findOne(id: number): Promise<UserResponseDto> {
     const user = await this.usersRepository.findOneBy({ id });
     /* se o User estiver inativo vai entrar aqui, então não vai mostrar no get/id ou delete/id */
@@ -484,6 +490,24 @@ export class UsersService {
 
     doctor.specialties = doctor.specialties.filter((s) => s.id !== specialtyId);
     await this.usersRepository.save(doctor);
+
+    return;
+  }
+
+  async updateRefreshToken(
+    userId: number,
+    refreshToken: string,
+  ): Promise<void> {
+    const user = await this.usersRepository.findOneBy({ id: userId });
+
+    if (!user) {
+      throw new NotFoundException(`User not found with ID ${userId}`);
+    }
+
+    const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
+
+    user.refreshToken = hashedRefreshToken;
+    await this.usersRepository.save(user);
 
     return;
   }
