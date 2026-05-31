@@ -26,6 +26,7 @@ import { DoctorResponseDto } from './dto/response/doctor-response.dto';
 import { SpecialtyResponseDto } from '../specialties/dto/response/specialty-response.dto';
 import { Specialty } from '../specialties/entities/specialty.entity';
 import { ScheduleEntity } from '../schedules/entities/schedule.entity';
+import { ScheduleStatus } from '../schedules/enums/schedule-status.enum';
 import { mapScheduleResponse } from '../schedules/utils/map-schedule-response';
 import { ScheduleResponseBaseDto } from '../schedules/dto/response/schedule-response-base.dto';
 import { DoctorQueryDto } from './dto/query/find-doctors-query.dto';
@@ -417,15 +418,30 @@ export class UsersService {
   }
 
   async remove(id: number): Promise<void> {
-    const user = await this.usersRepository.findOneBy({ id });
-    if (!user || !user.isActive) {
-      throw new NotFoundException('User not found');
-    }
-
-    user.deactivate();
-
-    await this.usersRepository.save(user);
+  const user = await this.usersRepository.findOneBy({ id });
+  if (!user || !user.isActive) {
+    throw new NotFoundException('User not found');
   }
+
+  // Bloqueia remoção se houver agendamentos ativos (PENDING ou CONFIRMED)
+  const activeSchedules = await this.schedulesRepository.count({
+    where: [
+      { doctor: { id }, status: ScheduleStatus.PENDING },
+      { doctor: { id }, status: ScheduleStatus.CONFIRMED },
+      { patient: { id }, status: ScheduleStatus.PENDING },
+      { patient: { id }, status: ScheduleStatus.CONFIRMED },
+    ],
+  });
+
+  if (activeSchedules > 0) {
+    throw new ConflictException(
+      `User with ID ${id} cannot be deleted because they have active schedules`,
+    );
+  }
+
+  user.deactivate();
+  await this.usersRepository.save(user);
+}
 
   async addSpecialty(doctorId: number, specialtyId: number) {
     const doctor = await this.usersRepository.manager.findOne(DoctorEntity, {
