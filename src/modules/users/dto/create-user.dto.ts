@@ -9,6 +9,8 @@ import {
 } from 'class-validator';
 import { UserType } from '../enums/user-type.enum';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsCPF } from 'class-validator-cpf';
+import { IsUniqueUserField } from '../validators/is-unique-user-field.validator';
 
 export class CreateUserDto {
   @ApiProperty({
@@ -23,6 +25,7 @@ export class CreateUserDto {
     description: 'Unique user email',
   })
   @IsEmail()
+  @IsUniqueUserField('email')
   email!: string;
 
   @ApiProperty({
@@ -59,9 +62,13 @@ export class CreateUserDto {
     example: '99999999999',
     description: 'Required for PATIENT users',
   })
+
   @ValidateIf((o: CreateUserDto) => o.type === UserType.PATIENT)
   @IsNotEmpty()
-  @Length(11, 11)
+  @IsCPF({
+    message: 'CPF Invalido',
+  })
+  @IsUniqueUserField('cpf')
   cpf?: string;
 
   @ApiPropertyOptional({

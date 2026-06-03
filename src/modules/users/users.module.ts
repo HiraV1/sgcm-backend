@@ -12,6 +12,7 @@ import { DoctorsController } from './doctors.controller';
 import { Specialty } from '../specialties/entities/specialty.entity';
 import { ScheduleEntity } from '../schedules/entities/schedule.entity';
 import { PatientsController } from './patients.controller';
+import { IsUniqueUserFieldConstraint } from './validators/is-unique-user-field.validator';
 
 @Module({
   imports: [
@@ -25,6 +26,6 @@ import { PatientsController } from './patients.controller';
     ]),
   ],
   controllers: [UsersController, DoctorsController, PatientsController],
-  providers: [UsersService],
+  providers: [UsersService, IsUniqueUserFieldConstraint],
 })
 export class UsersModule {}
