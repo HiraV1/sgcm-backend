@@ -33,8 +33,8 @@ export class UserEntity {
   isActive!: boolean;
 
   @Exclude()
-  @Column({ nullable: true })
-  refreshToken?: string;
+  @Column({ type: 'text', nullable: true })
+  refreshToken?: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;

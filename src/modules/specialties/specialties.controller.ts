@@ -2,14 +2,24 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, ParseIntPipe, Query 
 import { SpecialtiesService } from './specialties.service';
 import { CreateSpecialtyDto } from './dto/create-specialty.dto';
 import { UpdateSpecialtyDto } from './dto/update-specialty.dto';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { UserType } from '../users/enums/user-type.enum';
 
-@ApiTags('Specialties') // Organiza o módulo de Especialidades numa aba bonita no Swagger
+@ApiTags('Specialties')
+@ApiBearerAuth('JWT-auth') // Organiza o módulo de Especialidades numa aba bonita no Swagger
 @Controller('specialties')
 export class SpecialtiesController {
   constructor(private readonly specialtiesService: SpecialtiesService) {}
 
+  @Auth(UserType.ADMIN)
   @Post()
   @ApiOperation({ summary: 'Cadastrar uma nova especialidade médica' })
   @ApiResponse({ status: 201, description: 'Especialidade criada com sucesso.' })
@@ -18,6 +28,7 @@ export class SpecialtiesController {
     return this.specialtiesService.create(createSpecialtyDto);
   }
 
+  @Auth(UserType.ADMIN, UserType.DOCTOR, UserType.PATIENT)
   @Get()
   @ApiOperation({ summary: 'List users with pagination' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
@@ -29,17 +40,19 @@ export class SpecialtiesController {
     return this.specialtiesService.findAll(paginationQuery);
   }
 
-  // Deixamos as rotas de buscar por ID, atualizar e remover prontas para o futuro
+  @Auth(UserType.ADMIN, UserType.DOCTOR, UserType.PATIENT)
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.specialtiesService.findOne(id);
   }
 
+  @Auth(UserType.ADMIN)
   @Patch(':id')
   update(@Param('id', ParseIntPipe) id: number, @Body() updateSpecialtyDto: UpdateSpecialtyDto) {
     return this.specialtiesService.update(id, updateSpecialtyDto);
   }
 
+  @Auth(UserType.ADMIN)
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.specialtiesService.remove(id);

@@ -6,6 +6,11 @@ import { UserEntity } from '../users/entities/user.entity';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponseDto } from './dto/response/auth-response.dto';
 import { ConfigService } from '@nestjs/config';
+import {
+  JwtPayload,
+  JwtPayloadWithoutTimestamp,
+} from './interfaces/jwt-payload.interface';
+import { createHash, randomUUID } from 'crypto';
 
 @Injectable()
 export class AuthService {
@@ -31,10 +36,11 @@ export class AuthService {
   }
 
   private async generateTokens(user: UserEntity): Promise<AuthResponseDto> {
-    const payload = {
+    const payload: JwtPayloadWithoutTimestamp = {
       sub: user.id,
       email: user.email,
       type: user.type,
+      jti: randomUUID(),
     };
 
     const accessToken = await this.jwtService.signAsync(payload, {
@@ -56,5 +62,39 @@ export class AuthService {
     await this.usersService.updateRefreshToken(user.id, tokens.refreshToken);
 
     return new AuthResponseDto(tokens.accessToken, tokens.refreshToken);
+  }
+
+  async refresh(refreshToken: string): Promise<AuthResponseDto> {
+    let payload: JwtPayload;
+
+    try {
+      payload = await this.jwtService.verifyAsync<JwtPayload>(refreshToken);
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const user = await this.usersService.findById(payload.sub);
+
+    if (!user || !user.isActive) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const refreshTokenHash = createHash('sha256')
+      .update(refreshToken)
+      .digest('hex');
+
+    if (refreshTokenHash !== user.refreshToken) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+
+    const tokens = await this.generateTokens(user);
+
+    await this.usersService.updateRefreshToken(user.id, tokens.refreshToken);
+
+    return tokens;
+  }
+
+  async logout(userId: number): Promise<void> {
+    await this.usersService.clearRefreshToken(userId);
   }
 }

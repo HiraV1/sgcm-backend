@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -22,10 +23,14 @@ import { OnlineScheduleResponseDto } from './dto/response/online-schedule-respon
 import { mapScheduleResponse } from './utils/map-schedule-response';
 import { ScheduleResponseBaseDto } from './dto/response/schedule-response-base.dto';
 import { FindSchedulesQueryDto } from './dto/query/find-schedules-query.dto';
-import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
 import { UpdateScheduleStatusDto } from './dto/update-schedule-status.dto';
 import { UpdateScheduleDto } from './dto/update-schedule.dto';
+
+import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
+import { ScheduleOwnershipInfo } from './interfaces/schedule-ownership-info.interface';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { UserType } from '../users/enums/user-type.enum';
 
 @Injectable()
 export class SchedulesService {
@@ -109,7 +114,17 @@ export class SchedulesService {
 
   async create(
     createScheduleDto: CreateScheduleDto,
+    user: JwtPayload,
   ): Promise<ScheduleResponseBaseDto> {
+    if (
+      user.type === UserType.PATIENT &&
+      createScheduleDto.patientId !== user.sub
+    ) {
+      throw new ForbiddenException(
+        'Patients can only create schedules for themselves',
+      );
+    }
+
     this.validateFutureDate(createScheduleDto.scheduledAt);
     this.validateScheduleTypeFields(createScheduleDto);
 
@@ -268,7 +283,10 @@ export class SchedulesService {
     };
   }
 
-  async findOne(id: number): Promise<ScheduleResponseBaseDto> {
+  async findOne(
+    id: number,
+    currentUser: JwtPayload,
+  ): Promise<ScheduleResponseBaseDto> {
     const schedule = await this.scheduleRepository.findOne({
       where: { id },
       relations: ['doctor', 'patient'],
@@ -278,7 +296,33 @@ export class SchedulesService {
       throw new NotFoundException(`Schedule not found with ID ${id}`);
     }
 
+    if (currentUser.type !== UserType.ADMIN) {
+      const ownsSchedule =
+        schedule.patient.id === currentUser.sub ||
+        schedule.doctor.id === currentUser.sub;
+
+      if (!ownsSchedule) {
+        throw new ForbiddenException('You can only access your own schedules');
+      }
+    }
+
     return mapScheduleResponse(schedule);
+  }
+
+  async findOwnershipInfo(id: number): Promise<ScheduleOwnershipInfo> {
+    const schedule = await this.scheduleRepository.findOne({
+      where: { id },
+      relations: ['doctor', 'patient'],
+    });
+
+    if (!schedule) {
+      throw new NotFoundException(`Schedule not found with ID ${id}`);
+    }
+
+    return {
+      doctorId: schedule.doctor.id,
+      patientId: schedule.patient.id,
+    };
   }
 
   private isValidStatusTransition(
@@ -301,6 +345,7 @@ export class SchedulesService {
   async updateStatus(
     id: number,
     updateScheduleStatusDto: UpdateScheduleStatusDto,
+    currentUser: JwtPayload,
   ): Promise<ScheduleResponseBaseDto> {
     const schedule = await this.scheduleRepository.findOne({
       where: { id },
@@ -309,6 +354,21 @@ export class SchedulesService {
 
     if (!schedule) {
       throw new NotFoundException(`Schedule not found with ID ${id}`);
+    }
+
+    if (currentUser.type !== UserType.ADMIN) {
+      const ownsSchedule = schedule.patient.id === currentUser.sub;
+
+      if (!ownsSchedule) {
+        throw new ForbiddenException();
+      }
+    }
+
+    if (
+      currentUser.type === UserType.PATIENT &&
+      updateScheduleStatusDto.status !== ScheduleStatus.CANCELLED
+    ) {
+      throw new ForbiddenException('Patients can only cancel schedules');
     }
 
     if (updateScheduleStatusDto.status === ScheduleStatus.COMPLETED) {
