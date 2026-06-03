@@ -3,6 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
@@ -30,6 +31,8 @@ import { mapScheduleResponse } from '../schedules/utils/map-schedule-response';
 import { ScheduleResponseBaseDto } from '../schedules/dto/response/schedule-response-base.dto';
 import { DoctorQueryDto } from './dto/query/find-doctors-query.dto';
 import { PatientResponseDto } from './dto/response/patient-response.dto';
+import { createHash } from 'crypto';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @Injectable()
 export class UsersService {
@@ -257,7 +260,22 @@ export class UsersService {
     };
   }
 
-  async findOne(id: number): Promise<UserResponseDto> {
+  async findByEmail(email: string): Promise<UserEntity | null> {
+    const user = await this.usersRepository.findOneBy({ email: email });
+
+    return user;
+  }
+
+  async findById(id: number): Promise<UserEntity | null> {
+    const user = await this.usersRepository.findOneBy({ id });
+
+    return user;
+  }
+
+  async findOne(id: number, currentUser: JwtPayload): Promise<UserResponseDto> {
+    if (currentUser.type !== UserType.ADMIN && currentUser.sub !== id) {
+      throw new ForbiddenException('You can only access your data');
+    }
     const user = await this.usersRepository.findOneBy({ id });
     /* se o User estiver inativo vai entrar aqui, então não vai mostrar no get/id ou delete/id */
     if (!user || !user.isActive) {
@@ -280,7 +298,14 @@ export class UsersService {
     return new DoctorResponseDto(doctor);
   }
 
-  async findOnePatient(id: number): Promise<PatientResponseDto> {
+  async findOnePatient(
+    id: number,
+    currentUser: JwtPayload,
+  ): Promise<PatientResponseDto> {
+    if (currentUser.type !== UserType.ADMIN && currentUser.sub !== id) {
+      throw new ForbiddenException('You can only access your data');
+    }
+
     const patient = await this.patientsRepository.findOne({
       where: { id },
     });
@@ -310,7 +335,12 @@ export class UsersService {
   async findDoctorSchedules(
     doctorId: number,
     paginationQuery: PaginationQueryDto,
+    currentUser: JwtPayload,
   ): Promise<PaginatedResponse<ScheduleResponseBaseDto>> {
+    if (currentUser.type !== UserType.ADMIN && currentUser.sub !== doctorId) {
+      throw new ForbiddenException('You can only access your schedule');
+    }
+
     const doctor = await this.doctorsRepository.findOneBy({
       id: doctorId,
     });
@@ -353,7 +383,12 @@ export class UsersService {
   async findPatientSchedules(
     patientId: number,
     paginationQuery: PaginationQueryDto,
+    currentUser: JwtPayload,
   ): Promise<PaginatedResponse<ScheduleResponseBaseDto>> {
+    if (currentUser.type !== UserType.ADMIN && currentUser.sub !== patientId) {
+      throw new ForbiddenException('You can only access your schedule');
+    }
+
     const patient = await this.patientsRepository.findOneBy({ id: patientId });
 
     if (!patient || !patient.isActive) {
@@ -394,7 +429,12 @@ export class UsersService {
   async update(
     id: number,
     updateUserDto: UpdateUserDto,
+    currentUser: JwtPayload,
   ): Promise<UserResponseDto> {
+    if (currentUser.type !== UserType.ADMIN && currentUser.sub !== id) {
+      throw new ForbiddenException('You can only access your data');
+    }
+
     const user = await this.usersRepository.findOne({
       where: { id },
     });
@@ -486,5 +526,36 @@ export class UsersService {
     await this.usersRepository.save(doctor);
 
     return;
+  }
+
+  async updateRefreshToken(
+    userId: number,
+    refreshToken: string,
+  ): Promise<void> {
+    const user = await this.usersRepository.findOneBy({ id: userId });
+
+    if (!user) {
+      throw new NotFoundException(`User not found with ID ${userId}`);
+    }
+
+    const hashedRefreshToken = createHash('sha256')
+      .update(refreshToken)
+      .digest('hex');
+
+    user.refreshToken = hashedRefreshToken;
+
+    await this.usersRepository.save(user);
+  }
+
+  async clearRefreshToken(userId: number): Promise<void> {
+    const user = await this.usersRepository.findOneBy({ id: userId });
+
+    if (!user) {
+      throw new NotFoundException(`User not found with ID ${userId}`);
+    }
+
+    user.refreshToken = null;
+
+    await this.usersRepository.save(user);
   }
 }

@@ -1,13 +1,24 @@
+import { JwtPayload } from './../auth/interfaces/jwt-payload.interface';
 import { Controller, Get, Param, ParseIntPipe, Query } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
-import { ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { PatientResponseDto } from './dto/response/patient-response.dto';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { UserType } from './enums/user-type.enum';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
+@ApiBearerAuth('JWT-auth')
 @Controller('patients')
 export class PatientsController {
   constructor(private readonly usersService: UsersService) {}
 
+  @Auth(UserType.ADMIN)
   @Get()
   @ApiOperation({ summary: 'List patients with pagination' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
@@ -18,6 +29,7 @@ export class PatientsController {
     return this.usersService.findAllPatients(paginationQuery);
   }
 
+  @Auth(UserType.ADMIN, UserType.PATIENT)
   @Get(':id')
   @ApiOperation({ summary: 'Find patient by id' })
   @ApiResponse({
@@ -28,10 +40,14 @@ export class PatientsController {
     status: 404,
     description: 'Patient not found',
   })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.usersService.findOnePatient(id);
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.usersService.findOnePatient(id, currentUser);
   }
 
+  @Auth(UserType.ADMIN, UserType.PATIENT)
   @Get(':id/schedules')
   @ApiOperation({ summary: 'List patient schedules' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
@@ -39,7 +55,12 @@ export class PatientsController {
   findPatientSchedules(
     @Param('id', ParseIntPipe) id: number,
     @Query() paginationQuery: PaginationQueryDto,
+    @CurrentUser() currentUser: JwtPayload,
   ) {
-    return this.usersService.findPatientSchedules(id, paginationQuery);
+    return this.usersService.findPatientSchedules(
+      id,
+      paginationQuery,
+      currentUser,
+    );
   }
 }

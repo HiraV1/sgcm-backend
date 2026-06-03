@@ -10,16 +10,29 @@ import {
   Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { ApiOperation, ApiParam, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { DoctorResponseDto } from './dto/response/doctor-response.dto';
 import { DoctorQueryDto } from './dto/query/find-doctors-query.dto';
 import { SpecialtyResponseDto } from '../specialties/dto/response/specialty-response.dto';
+import { UserType } from './enums/user-type.enum';
 
+import { Auth } from '../auth/decorators/auth.decorator';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+
+@ApiBearerAuth('JWT-auth')
 @Controller('doctors')
 export class DoctorsController {
   constructor(private readonly usersService: UsersService) {}
 
+  @Auth(UserType.ADMIN, UserType.DOCTOR, UserType.PATIENT)
   @Get()
   @ApiOperation({ summary: 'List doctors with pagination' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
@@ -31,6 +44,7 @@ export class DoctorsController {
     return this.usersService.findAllDoctors(query);
   }
 
+  @Auth(UserType.ADMIN, UserType.DOCTOR, UserType.PATIENT)
   @Get(':id')
   @ApiOperation({ summary: 'Find doctor by id' })
   @ApiResponse({
@@ -45,6 +59,7 @@ export class DoctorsController {
     return this.usersService.findOneDoctor(id);
   }
 
+  @Auth(UserType.ADMIN, UserType.DOCTOR)
   @Get(':id/schedules')
   @ApiOperation({ summary: 'List doctor schedules' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
@@ -52,10 +67,16 @@ export class DoctorsController {
   findDoctorSchedules(
     @Param('id', ParseIntPipe) id: number,
     @Query() paginationQuery: PaginationQueryDto,
+    @CurrentUser() currentUser: JwtPayload,
   ) {
-    return this.usersService.findDoctorSchedules(id, paginationQuery);
+    return this.usersService.findDoctorSchedules(
+      id,
+      paginationQuery,
+      currentUser,
+    );
   }
 
+  @Auth(UserType.ADMIN, UserType.DOCTOR, UserType.PATIENT)
   @Get(':id/specialties')
   @ApiOperation({
     summary: 'List doctor specialties',
@@ -80,6 +101,7 @@ export class DoctorsController {
     return this.usersService.findDoctorSpecialties(id);
   }
 
+  @Auth(UserType.ADMIN)
   @Post(':id/specialties/:specialtyId')
   @ApiOperation({
     summary: 'Associate specialty to doctor',
@@ -115,6 +137,7 @@ export class DoctorsController {
     return this.usersService.addSpecialty(id, specialtyId);
   }
 
+  @Auth(UserType.ADMIN)
   @Delete(':id/specialties/:specialtyId')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
