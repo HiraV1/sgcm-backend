@@ -48,8 +48,14 @@ export abstract class ScheduleEntity {
   @Column({ nullable: true })
   cancelledAt?: Date;
 
+  @Column({ nullable: true })
+  cancelledBy?: number;
+
   @CreateDateColumn()
   createdAt!: Date;
+
+  @Column({ nullable: true })
+  createdBy?: number;
 
   @UpdateDateColumn()
   updatedAt!: Date;

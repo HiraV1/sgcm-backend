@@ -130,16 +130,17 @@ export class SchedulesService {
 
     switch (createScheduleDto.type) {
       case ScheduleType.HOME:
-        return this.createHome(createScheduleDto);
+        return this.createHome(createScheduleDto, user.sub);
       case ScheduleType.IN_PERSON:
-        return this.createInPerson(createScheduleDto);
+        return this.createInPerson(createScheduleDto, user.sub);
       case ScheduleType.ONLINE:
-        return this.createOnline(createScheduleDto);
+        return this.createOnline(createScheduleDto, user.sub);
     }
   }
 
   private async createInPerson(
     dto: CreateScheduleDto,
+    createdBy: number,
   ): Promise<InPersonScheduleResponseDto> {
     const { doctor, patient } = await this.validateUsers(
       dto.doctorId,
@@ -154,6 +155,7 @@ export class SchedulesService {
       patient,
       status: ScheduleStatus.PENDING,
       type: ScheduleType.IN_PERSON,
+      createdBy,
     });
 
     const savedInPersonSchedule =
@@ -164,6 +166,7 @@ export class SchedulesService {
 
   private async createHome(
     dto: CreateScheduleDto,
+    createdBy: number,
   ): Promise<HomeScheduleResponseDto> {
     const { doctor, patient } = await this.validateUsers(
       dto.doctorId,
@@ -178,6 +181,7 @@ export class SchedulesService {
       patient,
       status: ScheduleStatus.PENDING,
       type: ScheduleType.HOME,
+      createdBy,
     });
 
     const savedHomeSchedule = await this.homeScheduleRepository.save(schedule);
@@ -187,6 +191,7 @@ export class SchedulesService {
 
   private async createOnline(
     dto: CreateScheduleDto,
+    createdBy: number,
   ): Promise<OnlineScheduleResponseDto> {
     const { doctor, patient } = await this.validateUsers(
       dto.doctorId,
@@ -201,6 +206,7 @@ export class SchedulesService {
       patient,
       status: ScheduleStatus.PENDING,
       type: ScheduleType.ONLINE,
+      createdBy,
     });
 
     const savedOnlineSchedule =
@@ -392,6 +398,7 @@ export class SchedulesService {
 
     if (updateScheduleStatusDto.status === ScheduleStatus.CANCELLED) {
       schedule.cancelledAt = new Date();
+      schedule.cancelledBy = currentUser.sub;
       schedule.cancellationReason =
         updateScheduleStatusDto.cancellationReason ?? 'No reason provided';
     }
