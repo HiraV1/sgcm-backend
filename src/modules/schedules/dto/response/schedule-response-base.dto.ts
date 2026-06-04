@@ -43,6 +43,13 @@ export abstract class ScheduleResponseBaseDto {
   cancelledAt?: Date;
 
   @ApiProperty({
+    example: 1,
+    required: false,
+    nullable: true,
+  })
+  cancelledBy?: number;
+
+  @ApiProperty({
     example: 'Patient requested cancellation',
     nullable: true,
   })
@@ -54,10 +61,19 @@ export abstract class ScheduleResponseBaseDto {
   createdAt!: Date;
 
   @ApiProperty({
+    example: 1,
+    nullable: true,
+  })
+  createdBy?: number;
+
+  @ApiProperty({
     example: '2026-01-01T12:00:00Z',
   })
   updatedAt!: Date;
 
+  /* Como apenas identificadores numéricos são retornados, informações pessoais como 
+  nome e e-mail dos usuários não são divulgadas. Essa abordagem mantém a capacidade 
+  de auditoria sem expor dados sensíveis. */
   constructor(schedule: ScheduleEntity) {
     this.id = schedule.id;
     this.scheduledAt = schedule.scheduledAt;
@@ -68,8 +84,10 @@ export abstract class ScheduleResponseBaseDto {
     this.patientId = schedule.patient.id;
 
     this.cancelledAt = schedule.cancelledAt;
+    this.cancelledBy = schedule.cancelledBy;
     this.cancellationReason = schedule.cancellationReason;
     this.createdAt = schedule.createdAt;
+    this.createdBy = schedule.createdBy;
     this.updatedAt = schedule.updatedAt;
   }
 }
