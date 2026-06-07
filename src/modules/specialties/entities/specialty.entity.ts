@@ -20,7 +20,6 @@ export class Specialty {
   @Column({ type: 'text', nullable: true })
   description!: string;
 
-  // 👇 Adiciona este bloco de código 👇
   @ManyToMany(() => DoctorEntity, (doctor) => doctor.specialties)
   doctors!: DoctorEntity[];
 

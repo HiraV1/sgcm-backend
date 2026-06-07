@@ -10,7 +10,7 @@ export class CreateSpecialtyDto {
 
   @ApiProperty({ example: 'Especialidade que cuida do coração', required: false })
   @IsString({ message: 'A descrição deve ser um texto válido' })
-  @IsOptional() // Como é opcional, ele deixa passar se estiver vazio
+  @IsOptional() 
   description?: string;
 
 }

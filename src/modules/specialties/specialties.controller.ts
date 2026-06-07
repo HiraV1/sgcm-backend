@@ -15,7 +15,7 @@ import { UpdateSpecialtyDto } from './dto/update-specialty.dto';
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 
-@ApiTags('Specialties') // Organiza o módulo de Especialidades numa aba bonita no Swagger
+@ApiTags('Specialties') 
 @Controller('specialties')
 export class SpecialtiesController {
   constructor(private readonly specialtiesService: SpecialtiesService) {}

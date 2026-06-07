@@ -5,7 +5,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Specialty } from './entities/specialty.entity';
 
 @Module({
-  // Aqui nós conectamos a entidade (tabela) ao nosso módulo!
   imports: [TypeOrmModule.forFeature([Specialty])],
   controllers: [SpecialtiesController],
   providers: [SpecialtiesService],
