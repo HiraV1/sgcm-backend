@@ -1,0 +1,167 @@
+@startuml
+skinparam groupInheritance 2
+skinparam classFontStyle bold
+skinparam classBackgroundColor #FAFAFA
+skinparam classBorderColor #5A7FAF
+skinparam arrowColor #5A7FAF
+skinparam noteBorderColor #E8A838
+skinparam noteBackgroundColor #FFF8E7
+skinparam enumBackgroundColor #F0F4FF
+skinparam enumBorderColor #5A7FAF
+
+hide empty methods
+
+' ================================
+' ESPECIALIDADE
+' ================================
+
+package "Specialties" #E8F5E9 {
+
+  class Specialty {
+    + id: number
+    + name: string
+    + description: string
+    + createdAt: Date
+    + updatedAt: Date
+  }
+
+  class DoctorSpecialty {
+    + id: number
+    + doctorId: number
+    + specialtyId: number
+    + assignedAt: Date
+  }
+
+  note right of Specialty
+    Uma Specialty não pode ser
+    removida enquanto houver
+    Doctor associado a ela.
+    Regra verificada no service
+    antes da remoção.
+    --
+    [Stage-1] Implementado em
+    SpecialtiesService.remove()
+    lança ConflictException se
+    specialty.doctors.length > 0
+  end note
+
+  note left of DoctorSpecialty
+    Entidade de junção explícita
+    entre Doctor e Specialty.
+    Permite adicionar atributos
+    à relação futuramente —
+    ex: certificationDate,
+    certificationCode.
+    --
+    [Stage-1] Implementado como
+    entidade explícita no TypeORM
+    (não tabela de junção automática)
+  end note
+
+}
+
+' ================================
+' HIERARQUIA DE USUÁRIOS
+' ================================
+
+package "Users" #E3F2FD {
+
+  enum UserType {
+    ADMIN
+    DOCTOR
+    PATIENT
+  }
+
+  abstract class User {
+    + id: number
+    + name: string
+    + email: string
+    # password: string
+    + type: UserType
+    + isActive: boolean
+    + refreshToken: string
+    + createdAt: Date
+    + updatedAt: Date
+    ---
+    + activate(): void
+    + deactivate(): void
+    + validatePassword(password: string): boolean
+  }
+
+  class Admin {
+    + accessLevel: string
+  }
+
+  note left of Admin
+    Admin não realiza atendimentos.
+    Suas responsabilidades são
+    administrativas: gerenciar
+    usuários e especialidades,
+    autorizar procedimentos
+    especializados e revogar
+    laudos (Etapa 3).
+  end note
+
+  class Doctor {
+    + crm: string
+    ---
+    + getActiveSchedules(): Schedule[]
+    + getAppointments(): Appointment[]
+  }
+
+  class Patient {
+    + cpf: string
+    + birthDate: Date
+    ---
+    + getAge(): number
+    + getMedicalHistory(): Appointment[]
+  }
+
+  note right of User::isActive
+    isActive controla inativação
+    sem remoção física do registro.
+    --
+    Usuários inativos não aparecem
+    nas listagens padrão.
+    --
+    [Stage-1] Remoção bloqueada se
+    usuário possui agendamentos com
+    status PENDING ou CONFIRMED.
+    --
+    A restrição de autenticação
+    para usuários inativos será
+    aplicada na Etapa 2.
+  end note
+
+  note right of User::refreshToken
+    refreshToken é armazenado
+    de forma segura e usado
+    na Etapa 2 para renovação
+    do token JWT sem novo login.
+    --
+    [Stage-1] Campo nulo — sem
+    autenticação implementada.
+    Será preenchido na Etapa 2.
+  end note
+
+  note right of User::password
+    [Stage-1] Armazenada com hash
+    bcrypt (fator de custo 10).
+    Nunca exposta em respostas
+    da API via @Exclude() no DTO.
+  end note
+
+  User <|-down- Admin
+  User <|-down- Doctor
+  User <|-down- Patient
+
+  User -l-> UserType : type
+}
+
+' ================================
+' RELACIONAMENTOS
+' ================================
+
+Doctor "1" -down-o "0..*" DoctorSpecialty : possui >
+Specialty "1" -l-o "0..*" DoctorSpecialty : associada a >
+@enduml
