@@ -8,7 +8,6 @@ export class DoctorEntity extends UserEntity {
   @Column({ unique: true })
   crm!: string;
 
-  // 👇 Adiciona este bloco de código 👇
   @ManyToMany(() => Specialty, (specialty) => specialty.doctors)
   @JoinTable({
     name: 'doctor_specialties',

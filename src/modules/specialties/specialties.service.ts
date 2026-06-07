@@ -18,13 +18,11 @@ import { PaginatedResponse } from 'src/common/interfaces/paginated-response.inte
 
 @Injectable()
 export class SpecialtiesService {
-  // Injetamos o "Repositório", que é a ferramenta do TypeORM que conversa com o SQLite
   constructor(
     @InjectRepository(Specialty)
     private readonly specialtyRepository: Repository<Specialty>,
   ) {}
 
-  // Função para CRIAR uma nova especialidade
   async create(
     createSpecialtyDto: CreateSpecialtyDto,
   ): Promise<SpecialtyResponseDto> {
@@ -41,7 +39,6 @@ export class SpecialtiesService {
     return new SpecialtyResponseDto(savedSpecialty);
   }
 
-  // Função para LISTAR todas as especialidades
   async findAll(
     paginationQuery: PaginationQueryDto,
   ): Promise<PaginatedResponse<SpecialtyResponseDto>> {

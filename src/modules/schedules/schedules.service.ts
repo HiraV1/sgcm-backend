@@ -396,7 +396,7 @@ export class SchedulesService {
     }
 
     if (schedule.status === ScheduleStatus.COMPLETED) {
-      throw new ConflictException('Schedule with ID ${id} cannot be deleted because it has status COMPLETED');
+      throw new ConflictException(`Schedule with ID ${id} cannot be deleted because it has status COMPLETED`);
     }
 
     await this.scheduleRepository.remove(schedule);
