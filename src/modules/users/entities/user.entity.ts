@@ -12,7 +12,7 @@ import { UserType } from '../enums/user-type.enum';
 
 @Entity('users')
 @TableInheritance({ column: { type: 'varchar', name: 'type' } })
-export class UserEntity {
+export abstract class UserEntity {
   @PrimaryGeneratedColumn()
   id!: number;
 

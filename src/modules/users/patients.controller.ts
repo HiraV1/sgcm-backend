@@ -5,6 +5,7 @@ import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiResponse,
 } from '@nestjs/swagger';
@@ -37,6 +38,10 @@ export class PatientsController {
     type: PatientResponseDto,
   })
   @ApiResponse({
+    status: 403,
+    description: 'You can only access your data',
+  })
+  @ApiResponse({
     status: 404,
     description: 'Patient not found',
   })
@@ -58,6 +63,49 @@ export class PatientsController {
     @CurrentUser() currentUser: JwtPayload,
   ) {
     return this.usersService.findPatientSchedules(
+      id,
+      paginationQuery,
+      currentUser,
+    );
+  }
+
+  @Auth(UserType.ADMIN, UserType.PATIENT)
+  @Get(':id/appointments')
+  @ApiOperation({
+    summary: 'List patient appointments',
+  })
+  @ApiParam({
+    name: 'id',
+    example: 2,
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    example: 20,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Patient appointments retrieved successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'You can only access your appointments',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Patient not found',
+  })
+  findPatientAppointments(
+    @Param('id', ParseIntPipe) id: number,
+    @Query() paginationQuery: PaginationQueryDto,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.usersService.findPatientAppointments(
       id,
       paginationQuery,
       currentUser,

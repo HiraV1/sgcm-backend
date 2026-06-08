@@ -101,6 +101,49 @@ export class DoctorsController {
     return this.usersService.findDoctorSpecialties(id);
   }
 
+  @Auth(UserType.ADMIN, UserType.DOCTOR)
+  @Get(':id/appointments')
+  @ApiOperation({
+    summary: 'List doctor appointments',
+  })
+  @ApiParam({
+    name: 'id',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    example: 20,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Doctor appointments retrieved successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'You can only access your appointments',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Doctor not found',
+  })
+  findDoctorAppointments(
+    @Param('id', ParseIntPipe) id: number,
+    @Query() paginationQuery: PaginationQueryDto,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.usersService.findDoctorAppointments(
+      id,
+      paginationQuery,
+      currentUser,
+    );
+  }
+
   @Auth(UserType.ADMIN)
   @Post(':id/specialties/:specialtyId')
   @ApiOperation({

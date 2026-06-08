@@ -18,19 +18,24 @@ import { UserEntity } from './entities/user.entity';
 import { AdminEntity } from './entities/admin.entity';
 import { DoctorEntity } from './entities/doctor.entity';
 import { PatientEntity } from './entities/patient.entity';
+import { ScheduleEntity } from '../schedules/entities/schedule.entity';
+import { Specialty } from '../specialties/entities/specialty.entity';
+import { AppointmentEntity } from '../appointments/entities/appointment.entity';
 
 import { UserType } from './enums/user-type.enum';
 
 import { PaginatedResponse } from 'src/common/interfaces/paginated-response.interface';
 import { mapUserResponse } from './utils/map-user-response';
+import { mapScheduleResponse } from '../schedules/utils/map-schedule-response';
+import { mapAppointmentResponse } from '../appointments/utils/map-appointment-response';
+
 import { DoctorResponseDto } from './dto/response/doctor-response.dto';
 import { SpecialtyResponseDto } from '../specialties/dto/response/specialty-response.dto';
-import { Specialty } from '../specialties/entities/specialty.entity';
-import { ScheduleEntity } from '../schedules/entities/schedule.entity';
-import { mapScheduleResponse } from '../schedules/utils/map-schedule-response';
 import { ScheduleResponseBaseDto } from '../schedules/dto/response/schedule-response-base.dto';
 import { DoctorQueryDto } from './dto/query/find-doctors-query.dto';
 import { PatientResponseDto } from './dto/response/patient-response.dto';
+import { AppointmentResponseBaseDto } from '../appointments/dto/response/appointment-response-base.dto';
+
 import { createHash } from 'crypto';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
@@ -54,6 +59,9 @@ export class UsersService {
 
     @InjectRepository(ScheduleEntity)
     private readonly schedulesRepository: Repository<ScheduleEntity>,
+
+    @InjectRepository(AppointmentEntity)
+    private readonly appointmentRepository: Repository<AppointmentEntity>,
   ) {}
 
   async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
@@ -380,6 +388,53 @@ export class UsersService {
     };
   }
 
+  async findDoctorAppointments(
+    doctorId: number,
+    paginationQuery: PaginationQueryDto,
+    currentUser: JwtPayload,
+  ): Promise<PaginatedResponse<AppointmentResponseBaseDto>> {
+    if (currentUser.type !== UserType.ADMIN && currentUser.sub !== doctorId) {
+      throw new ForbiddenException('You can only access your appointments');
+    }
+
+    const doctor = await this.doctorsRepository.findOneBy({
+      id: doctorId,
+    });
+
+    if (!doctor || !doctor.isActive) {
+      throw new NotFoundException(`Doctor not found with ID ${doctorId}`);
+    }
+
+    const { page = 1, limit = 20 } = paginationQuery;
+
+    const skip = (page - 1) * limit;
+
+    const [appointments, totalItems] =
+      await this.appointmentRepository.findAndCount({
+        where: {
+          doctor: {
+            id: doctorId,
+          },
+        },
+        relations: ['doctor', 'patient', 'schedule'],
+        skip,
+        take: limit,
+        order: {
+          createdAt: 'DESC',
+        },
+      });
+
+    return {
+      data: appointments.map(mapAppointmentResponse),
+      meta: {
+        totalItems,
+        page,
+        limit,
+        totalPages: Math.ceil(totalItems / limit),
+      },
+    };
+  }
+
   async findPatientSchedules(
     patientId: number,
     paginationQuery: PaginationQueryDto,
@@ -417,6 +472,51 @@ export class UsersService {
 
     return {
       data: schedules.map((schedule) => mapScheduleResponse(schedule)),
+      meta: {
+        totalItems,
+        page,
+        limit,
+        totalPages: Math.ceil(totalItems / limit),
+      },
+    };
+  }
+
+  async findPatientAppointments(
+    patientId: number,
+    paginationQuery: PaginationQueryDto,
+    currentUser: JwtPayload,
+  ): Promise<PaginatedResponse<AppointmentResponseBaseDto>> {
+    if (currentUser.type !== UserType.ADMIN && currentUser.sub !== patientId) {
+      throw new ForbiddenException('You can only access your appointments');
+    }
+
+    const patient = await this.patientsRepository.findOneBy({ id: patientId });
+
+    if (!patient || !patient.isActive) {
+      throw new NotFoundException(`Patient not found with ID ${patientId}`);
+    }
+
+    const { page = 1, limit = 20 } = paginationQuery;
+
+    const skip = (page - 1) * limit;
+
+    const [appointments, totalItems] =
+      await this.appointmentRepository.findAndCount({
+        where: {
+          patient: {
+            id: patientId,
+          },
+        },
+        relations: ['doctor', 'patient', 'schedule'],
+        skip,
+        take: limit,
+        order: {
+          createdAt: 'DESC',
+        },
+      });
+
+    return {
+      data: appointments.map(mapAppointmentResponse),
       meta: {
         totalItems,
         page,
