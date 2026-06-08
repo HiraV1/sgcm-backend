@@ -67,31 +67,37 @@ export class HttpExceptionFilter implements ExceptionFilter {
     });
   }
 
-  private getTitle(status: number): string {
-    /* ADICIONAR 401 E 403 QUANDO FOR FEITA A IMPLEMENTAÇÃO DE AUTENTICAÇÃO E AUTORIZAÇÃO */
-    switch (status) {
-      case 400:
-        return 'Bad Request';
-      case 404:
-        return 'Not Found';
-      case 409:
-        return 'Conflict';
-      default:
-        return 'Internal Server Error';
-    }
+private getTitle(status: number): string {
+  switch (status) {
+    case 400:
+      return 'Bad Request';
+    case 401:
+      return 'Unauthorized';
+    case 403:
+      return 'Forbidden';
+    case 404:
+      return 'Not Found';
+    case 409:
+      return 'Conflict';
+    default:
+      return 'Internal Server Error';
   }
+}
 
-  private getType(status: number): string {
-    /* ADICIONAR 401 E 403 QUANDO FOR FEITA A IMPLEMENTAÇÃO DE AUTENTICAÇÃO E AUTORIZAÇÃO */
-    switch (status) {
-      case 400:
-        return 'https://sgcm.example.com/problems/bad-request';
-      case 404:
-        return 'https://sgcm.example.com/problems/not-found';
-      case 409:
-        return 'https://sgcm.example.com/problems/conflict';
-      default:
-        return 'https://sgcm.example.com/problems/internal-server-error';
-    }
+private getType(status: number): string {
+  switch (status) {
+    case 400:
+      return 'https://sgcm.example.com/problems/bad-request';
+    case 401:
+      return 'https://sgcm.example.com/problems/unauthorized';
+    case 403:
+      return 'https://sgcm.example.com/problems/forbidden';
+    case 404:
+      return 'https://sgcm.example.com/problems/not-found';
+    case 409:
+      return 'https://sgcm.example.com/problems/conflict';
+    default:
+      return 'https://sgcm.example.com/problems/internal-server-error';
   }
+}
 }
