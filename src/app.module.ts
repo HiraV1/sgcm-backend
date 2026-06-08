@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
@@ -14,16 +14,13 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as Joi from 'joi';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
+import { LoggingMiddleware } from './common/middlewares/logging.middleware';
 
 @Module({
   imports: [
     AuthModule,
-    /* Responsável por carregar o módulo de configuração e centralizar o gerencimento das variáveis de ambiente.
-    Carregando os dados do arquivo .env evitando alguns valores hand-coded, além disso foi utilizada a biblioteca
-    Joi pra validar as váriaveis de embiente (dados dentro da nossa .env) durante a inicialização da aplicação */
     ConfigModule.forRoot({
       isGlobal: true,
-
       validationSchema: Joi.object({
         PORT: Joi.number().required(),
         DATABASE_PATH: Joi.string().required(),
@@ -32,9 +29,6 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
         JWT_REFRESH_EXPIRES_IN: Joi.string().required(),
       }),
     }),
-    /* Mudei o módulo do TypeOrm de forRoot para forRootAsync permitindo o carregamento dinâmico de algumas
-    configurações com o ConfigService como o path do banco de dados definido no .env, dispensando a necessidade
-    de alterações feitas a mão */
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
@@ -51,4 +45,8 @@ import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: JwtAuthGuard }],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggingMiddleware).forRoutes('*');
+  }
+}
