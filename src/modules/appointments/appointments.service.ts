@@ -397,6 +397,26 @@ export class AppointmentsService {
       throw new BadRequestException('Appointment is already finished');
     }
 
+    if (appointment.type === AppointmentType.CONSULTATION) {
+      const consultation = appointment as ConsultationEntity;
+
+      if (!consultation.diagnosticHypothesis) {
+        throw new BadRequestException(
+          'Diagnostic hypothesis must be filled before finishing the consultation appointment',
+        );
+      }
+    }
+
+    if (appointment.type === AppointmentType.EXAM) {
+      const exam = appointment as ExamEntity;
+
+      if (!exam.result) {
+        throw new BadRequestException(
+          'Exam result must be filled before finishing the appointment',
+        );
+      }
+    }
+
     appointment.status = AppointmentStatus.FINISHED;
     appointment.endedAt = new Date();
 
