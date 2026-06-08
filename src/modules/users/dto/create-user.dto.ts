@@ -9,6 +9,7 @@ import {
 } from 'class-validator';
 import { UserType } from '../enums/user-type.enum';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsCPF } from 'class-validator-cpf';
 
 export class CreateUserDto {
   @ApiProperty({
@@ -61,7 +62,9 @@ export class CreateUserDto {
   })
   @ValidateIf((o: CreateUserDto) => o.type === UserType.PATIENT)
   @IsNotEmpty()
-  @Length(11, 11)
+  @IsCPF({
+    message: 'Invalid CPF (Brazilian taxpayer ID number)',
+  })
   cpf?: string;
 
   @ApiPropertyOptional({
