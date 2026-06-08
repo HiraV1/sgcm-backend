@@ -19,18 +19,25 @@ import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { UserResponseDto } from './dto/response/user-response.dto';
 
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiOperation,
   ApiQuery,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { UserType } from './enums/user-type.enum';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('Users')
+@ApiBearerAuth('JWT-auth')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @Auth(UserType.ADMIN)
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new user' })
@@ -89,6 +96,7 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
+  @Auth(UserType.ADMIN)
   @Get()
   @ApiOperation({ summary: 'List users with pagination' })
   @ApiQuery({ name: 'page', required: false, example: 1 })
@@ -99,6 +107,7 @@ export class UsersController {
     return this.usersService.findAll(paginationQueryDto);
   }
 
+  @Auth(UserType.ADMIN, UserType.DOCTOR, UserType.PATIENT)
   @Get(':id')
   @ApiOperation({ summary: 'Find user by id' })
   @ApiResponse({
@@ -109,10 +118,14 @@ export class UsersController {
     status: 404,
     description: 'User not found',
   })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.usersService.findOne(+id);
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.usersService.findOne(id, currentUser);
   }
 
+  @Auth(UserType.ADMIN, UserType.DOCTOR, UserType.PATIENT)
   @Patch(':id')
   @ApiOperation({ summary: 'Update user by id' })
   @ApiBody({
@@ -151,10 +164,12 @@ export class UsersController {
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateUserDto: UpdateUserDto,
+    @CurrentUser() currentUser: JwtPayload,
   ) {
-    return this.usersService.update(+id, updateUserDto);
+    return this.usersService.update(id, updateUserDto, currentUser);
   }
 
+  @Auth(UserType.ADMIN)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Deactivate user by id' })
@@ -168,20 +183,5 @@ export class UsersController {
   })
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.remove(+id);
-  }
-  @Post(':id/specialties/:specialtyId')
-  addSpecialty(
-    @Param('id') id: string,
-    @Param('specialtyId') specialtyId: string,
-  ) {
-    return this.usersService.addSpecialty(+id, +specialtyId);
-  }
-
-  @Delete(':id/specialties/:specialtyId')
-  removeSpecialty(
-    @Param('id') id: string,
-    @Param('specialtyId') specialtyId: string,
-  ) {
-    return this.usersService.removeSpecialty(+id, +specialtyId);
   }
 }

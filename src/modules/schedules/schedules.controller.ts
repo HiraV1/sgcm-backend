@@ -22,6 +22,7 @@ import { ScheduleType } from './enums/schedule-type.enum';
 import { ScheduleStatus } from './enums/schedule-status.enum';
 
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiOperation,
   ApiParam,
@@ -29,12 +30,18 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Auth } from '../auth/decorators/auth.decorator';
+import { UserType } from '../users/enums/user-type.enum';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @ApiTags('Schedules')
+@ApiBearerAuth('JWT-auth')
 @Controller('schedules')
 export class SchedulesController {
   constructor(private readonly schedulesService: SchedulesService) {}
 
+  @Auth(UserType.ADMIN, UserType.PATIENT)
   @Post()
   @ApiOperation({
     summary: 'Create a new schedule',
@@ -95,10 +102,14 @@ export class SchedulesController {
     status: 409,
     description: 'Schedule conflict detected',
   })
-  create(@Body() createScheduleDto: CreateScheduleDto) {
-    return this.schedulesService.create(createScheduleDto);
+  create(
+    @Body() createScheduleDto: CreateScheduleDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.schedulesService.create(createScheduleDto, user);
   }
 
+  @Auth(UserType.ADMIN)
   @Get()
   @ApiOperation({
     summary: 'List schedules with filters and pagination',
@@ -147,6 +158,7 @@ export class SchedulesController {
     return this.schedulesService.findAll(query);
   }
 
+  @Auth(UserType.ADMIN, UserType.DOCTOR, UserType.PATIENT)
   @Get(':id')
   @ApiOperation({
     summary: 'Find schedule by id',
@@ -159,10 +171,14 @@ export class SchedulesController {
     status: 404,
     description: 'Schedule not found',
   })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.schedulesService.findOne(+id);
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.schedulesService.findOne(id, currentUser);
   }
 
+  @Auth(UserType.ADMIN)
   @Put(':id')
   @ApiBody({
     description: 'Update schedule data',
@@ -197,6 +213,7 @@ export class SchedulesController {
     return this.schedulesService.update(id, updateScheduleDto);
   }
 
+  @Auth(UserType.ADMIN, UserType.PATIENT)
   @Patch(':id/status')
   @ApiBody({
     description: 'Update schedule status respecting allowed transitions',
@@ -220,10 +237,16 @@ export class SchedulesController {
   updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateScheduleStatusDto: UpdateScheduleStatusDto,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.schedulesService.updateStatus(id, updateScheduleStatusDto);
+    return this.schedulesService.updateStatus(
+      id,
+      updateScheduleStatusDto,
+      user,
+    );
   }
 
+  @Auth(UserType.ADMIN)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({

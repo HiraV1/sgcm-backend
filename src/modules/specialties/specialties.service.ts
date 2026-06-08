@@ -115,10 +115,10 @@ export class SpecialtiesService {
     return new SpecialtyResponseDto(updatedSpecialty);
   }
 
-async remove(id: number) {
+  async remove(id: number) {
     const specialty = await this.specialtyRepository.findOne({
       where: { id },
-      relations: ['doctors'], 
+      relations: ['doctors'],
     });
 
     if (!specialty) {

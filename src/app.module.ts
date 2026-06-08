@@ -5,15 +5,19 @@ import { AppService } from './app.service';
 import { UsersModule } from './modules/users/users.module';
 import { SpecialtiesModule } from './modules/specialties/specialties.module';
 import { SchedulesModule } from './modules/schedules/schedules.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import * as Joi from 'joi';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 
 @Module({
   imports: [
+    AuthModule,
     /* Responsável por carregar o módulo de configuração e centralizar o gerencimento das variáveis de ambiente.
     Carregando os dados do arquivo .env evitando alguns valores hand-coded, além disso foi utilizada a biblioteca
     Joi pra validar as váriaveis de embiente (dados dentro da nossa .env) durante a inicialização da aplicação */
@@ -45,6 +49,6 @@ import * as Joi from 'joi';
     SchedulesModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: JwtAuthGuard }],
 })
 export class AppModule {}

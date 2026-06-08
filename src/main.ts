@@ -34,6 +34,14 @@ async function bootstrap() {
     .setTitle('SGCM API')
     .setDescription('Sistema de Gestão de Clínica Médica')
     .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+      },
+      'JWT-auth',
+    )
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
