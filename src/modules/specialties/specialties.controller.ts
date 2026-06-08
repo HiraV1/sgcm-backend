@@ -13,8 +13,8 @@ import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { UserType } from '../users/enums/user-type.enum';
 
-@ApiTags('Specialties')
-@ApiBearerAuth('JWT-auth') // Organiza o módulo de Especialidades numa aba bonita no Swagger
+@ApiTags('Specialties') // Organiza o módulo de Especialidades numa aba bonita no Swagger
+@ApiBearerAuth('JWT-auth')
 @Controller('specialties')
 export class SpecialtiesController {
   constructor(private readonly specialtiesService: SpecialtiesService) {}
