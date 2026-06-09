@@ -38,6 +38,9 @@ import { CreateSpecializedProcedureDto } from '../procedures/dto/create-speciali
 import { ProcedureQueryDto } from '../procedures/dto/query/procedure-query.dto';
 import { ProcedureType } from '../procedures/enums/procedure-type.enum';
 import { AuthorizationStatus } from '../procedures/enums/procedure-authorization-status.enum';
+import { MedicalRecordResponseDto } from '../medical-records/dto/response/medical-record-response.dto';
+import { CreateMedicalRecordDto } from '../medical-records/dto/create-medical-record.dto';
+import { MedicalRecordsService } from '../medical-records/medical-records.service';
 
 @ApiBearerAuth('JWT-auth')
 @Controller('appointments')
@@ -45,6 +48,7 @@ export class AppointmentsController {
   constructor(
     private readonly appointmentsService: AppointmentsService,
     private readonly proceduresService: ProceduresService,
+    private readonly medicalRecordsService: MedicalRecordsService,
   ) {}
 
   @Auth(UserType.ADMIN, UserType.DOCTOR)
@@ -446,6 +450,100 @@ export class AppointmentsController {
     return this.proceduresService.findAppointmentProcedures(
       id,
       query,
+      currentUser,
+    );
+  }
+
+  //MEDICAL RECORDS
+
+  @Auth(UserType.ADMIN, UserType.DOCTOR)
+  @Post(':id/records')
+  @ApiOperation({
+    summary: 'Create a medical record',
+  })
+  @ApiParam({
+    name: 'id',
+    example: 1,
+    description: 'Appointment ID',
+  })
+  @ApiBody({
+    description: 'Create a medical record for a finished appointment',
+    examples: {
+      medicalRecord: {
+        summary: 'Create medical record',
+        value: {
+          diagnosis: 'Type 2 diabetes mellitus',
+          prescription: 'Metformin 500mg twice daily for 30 days',
+          notes: 'Patient should return in 30 days for follow-up evaluation',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Medical record created successfully',
+    type: MedicalRecordResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Medical records can only be created for finished appointments',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'You can only create records for your own appointments',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Appointment not found',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'A medical record already exists for this appointment',
+  })
+  createMedicalRecord(
+    @Param('id', ParseIntPipe)
+    appointmentId: number,
+
+    @Body()
+    dto: CreateMedicalRecordDto,
+
+    @CurrentUser()
+    currentUser: JwtPayload,
+  ) {
+    return this.medicalRecordsService.create(appointmentId, dto, currentUser);
+  }
+
+  @Auth(UserType.ADMIN, UserType.DOCTOR, UserType.PATIENT)
+  @Get(':id/records')
+  @ApiOperation({
+    summary: 'Get medical record by appointment',
+  })
+  @ApiParam({
+    name: 'id',
+    example: 1,
+    description: 'Appointment ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Medical record found successfully',
+    type: MedicalRecordResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'You can only access medical records related to your appointments',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Appointment or medical record not found',
+  })
+  findAppointmentRecord(
+    @Param('id', ParseIntPipe) appointmentId: number,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.medicalRecordsService.findAppointmentRecord(
+      appointmentId,
       currentUser,
     );
   }
