@@ -16,6 +16,7 @@ import * as Joi from 'joi';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
+import { ProceduresModule } from './modules/procedures/procedures.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { AppointmentsModule } from './modules/appointments/appointments.module';
     SpecialtiesModule,
     SchedulesModule,
     AppointmentsModule,
+    ProceduresModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: JwtAuthGuard }],

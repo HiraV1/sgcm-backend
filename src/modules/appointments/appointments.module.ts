@@ -7,9 +7,11 @@ import { ConsultationEntity } from './entities/consultation.entity';
 import { ExamEntity } from './entities/exam.entity';
 import { FollowUpEntity } from './entities/follow-up.entity';
 import { ScheduleEntity } from '../schedules/entities/schedule.entity';
+import { ProceduresModule } from '../procedures/procedures.module';
 
 @Module({
   imports: [
+    ProceduresModule,
     TypeOrmModule.forFeature([
       AppointmentEntity,
       ConsultationEntity,

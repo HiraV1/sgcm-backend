@@ -68,7 +68,6 @@ export class AppointmentsService {
           id: scheduleId,
         },
       },
-      relations: ['doctor', 'patient', 'schedule'],
     });
 
     if (existingAppointment) {
