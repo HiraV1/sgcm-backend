@@ -32,11 +32,20 @@ import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { AppointmentQueryDto } from './dto/query/find-appointment-query.dto';
 import { AppointmentType } from './enums/appointment-type.enum';
 import { AppointmentStatus } from './enums/appointment-status.enum';
+import { ProceduresService } from '../procedures/procedures.service';
+import { CreateSimpleProcedureDto } from '../procedures/dto/create-simple-procedure.dto';
+import { CreateSpecializedProcedureDto } from '../procedures/dto/create-specialized-procedure.dto';
+import { ProcedureQueryDto } from '../procedures/dto/query/procedure-query.dto';
+import { ProcedureType } from '../procedures/enums/procedure-type.enum';
+import { AuthorizationStatus } from '../procedures/enums/procedure-authorization-status.enum';
 
 @ApiBearerAuth('JWT-auth')
 @Controller('appointments')
 export class AppointmentsController {
-  constructor(private readonly appointmentsService: AppointmentsService) {}
+  constructor(
+    private readonly appointmentsService: AppointmentsService,
+    private readonly proceduresService: ProceduresService,
+  ) {}
 
   @Auth(UserType.ADMIN, UserType.DOCTOR)
   @Post()
@@ -297,5 +306,147 @@ export class AppointmentsController {
     @CurrentUser() currentUser: JwtPayload,
   ) {
     return this.appointmentsService.finish(id, currentUser);
+  }
+
+  //PROCEDURES
+
+  @Auth(UserType.ADMIN, UserType.DOCTOR)
+  @Post(':id/procedures')
+  @ApiOperation({
+    summary: 'Create a procedure for an appointment',
+  })
+  @ApiParam({
+    name: 'id',
+    example: 1,
+    description: 'Appointment ID',
+  })
+  @ApiBody({
+    description:
+      'Create procedures based on their type. Procedures can only be created for appointments that are still in progress.',
+    examples: {
+      simpleProcedure: {
+        summary: 'Create simple procedure',
+        value: {
+          type: 'SIMPLE',
+          name: 'Blood Collection',
+          description: 'Routine blood collection for laboratory analysis',
+          estimatedDuration: 15,
+        },
+      },
+
+      specializedWithoutAuthorization: {
+        summary: 'Create specialized procedure without authorization',
+        value: {
+          type: 'SPECIALIZED',
+          name: 'Abdominal Ultrasound',
+          description: 'Ultrasound examination of the abdominal region',
+          requiredEquipment: ['Ultrasound Device'],
+          complexityLevel: 'MEDIUM',
+          requiresAuthorization: false,
+        },
+      },
+
+      specializedWithAuthorization: {
+        summary: 'Create specialized procedure requiring authorization',
+        value: {
+          type: 'SPECIALIZED',
+          name: 'Cardiac MRI',
+          description: 'Magnetic resonance imaging of the heart',
+          requiredEquipment: ['MRI Scanner', 'Contrast Injector'],
+          complexityLevel: 'HIGH',
+          requiresAuthorization: true,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Procedure created successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid procedure data or appointment is already finished',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'You can only create procedures for your own appointments',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Appointment not found',
+  })
+  createProcedure(
+    @Param('id', ParseIntPipe) appointmentId: number,
+    @Body() dto: CreateSimpleProcedureDto | CreateSpecializedProcedureDto,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.proceduresService.create(appointmentId, dto, currentUser);
+  }
+
+  @Auth(UserType.ADMIN, UserType.DOCTOR)
+  @Get(':id/procedures')
+  @ApiOperation({
+    summary: 'List procedures associated with an appointment',
+  })
+  @ApiParam({
+    name: 'id',
+    example: 1,
+    description: 'Appointment ID',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    example: 20,
+  })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    example: 'createdAt:DESC',
+    description:
+      'Sort field and direction. Supported fields: createdAt, updatedAt, name',
+  })
+  @ApiQuery({
+    name: 'type',
+    required: false,
+    enum: ProcedureType,
+    description: 'Filter procedures by type',
+  })
+  @ApiQuery({
+    name: 'authorizationStatus',
+    required: false,
+    enum: AuthorizationStatus,
+    description: 'Filter specialized procedures by authorization status',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Procedures retrieved successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'You can only access procedures from your own appointments',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Appointment not found',
+  })
+  findAppointmentProcedures(
+    @Param('id', ParseIntPipe) id: number,
+    @Query() query: ProcedureQueryDto,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.proceduresService.findAppointmentProcedures(
+      id,
+      query,
+      currentUser,
+    );
   }
 }
