@@ -13,11 +13,15 @@ import { PatientResponseDto } from './dto/response/patient-response.dto';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { UserType } from './enums/user-type.enum';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { MedicalRecordsService } from '../medical-records/medical-records.service';
 
 @ApiBearerAuth('JWT-auth')
 @Controller('patients')
 export class PatientsController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly medicalRecordsService: MedicalRecordsService,
+  ) {}
 
   @Auth(UserType.ADMIN)
   @Get()
@@ -108,6 +112,52 @@ export class PatientsController {
     return this.usersService.findPatientAppointments(
       id,
       paginationQuery,
+      currentUser,
+    );
+  }
+
+  // MEDICAL RECORDS
+
+  @Auth(UserType.ADMIN, UserType.DOCTOR, UserType.PATIENT)
+  @Get(':id/records')
+  @ApiOperation({
+    summary: 'List patient medical records',
+  })
+  @ApiParam({
+    name: 'id',
+    example: 1,
+    description: 'Patient ID',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    example: 20,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Medical records retrieved successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'You can only access your own medical records',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Patient not found',
+  })
+  findPatientRecords(
+    @Param('id', ParseIntPipe) patientId: number,
+    @Query() query: PaginationQueryDto,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.medicalRecordsService.findPatientRecords(
+      patientId,
+      query,
       currentUser,
     );
   }

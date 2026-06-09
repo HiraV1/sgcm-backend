@@ -17,6 +17,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './modules/auth/guards/jwt-auth.guard';
 import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { ProceduresModule } from './modules/procedures/procedures.module';
+import { MedicalRecordsModule } from './modules/medical-records/medical-records.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { ProceduresModule } from './modules/procedures/procedures.module';
     SchedulesModule,
     AppointmentsModule,
     ProceduresModule,
+    MedicalRecordsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: JwtAuthGuard }],
