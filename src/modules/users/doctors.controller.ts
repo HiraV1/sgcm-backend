@@ -26,11 +26,17 @@ import { UserType } from './enums/user-type.enum';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { MedicalRecordsService } from '../medical-records/medical-records.service';
+import { ReportsService } from '../reports/reports.service';
 
 @ApiBearerAuth('JWT-auth')
 @Controller('doctors')
 export class DoctorsController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly medicalRecordsService: MedicalRecordsService,
+    private readonly reportsService: ReportsService,
+  ) {}
 
   @Auth(UserType.ADMIN, UserType.DOCTOR, UserType.PATIENT)
   @Get()
@@ -210,5 +216,92 @@ export class DoctorsController {
     @Param('specialtyId', ParseIntPipe) specialtyId: number,
   ) {
     return this.usersService.removeSpecialty(id, specialtyId);
+  }
+
+  // MEDICAL RECORDS
+
+  @Auth(UserType.ADMIN, UserType.DOCTOR)
+  @Get(':id/records')
+  @ApiOperation({
+    summary: 'List doctor medical records',
+  })
+  @ApiParam({
+    name: 'id',
+    example: 1,
+    description: 'Doctor ID',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    example: 20,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Medical records retrieved successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'You can only access your own medical records',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Doctor not found',
+  })
+  findDoctorRecords(
+    @Param('id', ParseIntPipe) doctorId: number,
+    @Query() query: PaginationQueryDto,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.medicalRecordsService.findDoctorRecords(
+      doctorId,
+      query,
+      currentUser,
+    );
+  }
+
+  // REPORTS
+
+  @Auth(UserType.ADMIN, UserType.DOCTOR)
+  @Get(':id/reports')
+  @ApiOperation({
+    summary: 'List reports issued by a doctor',
+  })
+  @ApiParam({
+    name: 'id',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    example: 20,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Reports retrieved successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'You can only access your reports',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Doctor not found',
+  })
+  findDoctorReports(
+    @Param('id', ParseIntPipe) id: number,
+    @Query() query: PaginationQueryDto,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.reportsService.findDoctorReports(id, query, currentUser);
   }
 }

@@ -13,9 +13,13 @@ import { Specialty } from '../specialties/entities/specialty.entity';
 import { ScheduleEntity } from '../schedules/entities/schedule.entity';
 import { PatientsController } from './patients.controller';
 import { AppointmentEntity } from '../appointments/entities/appointment.entity';
+import { MedicalRecordsModule } from '../medical-records/medical-records.module';
+import { ReportsModule } from '../reports/reports.module';
 
 @Module({
   imports: [
+    MedicalRecordsModule,
+    ReportsModule,
     TypeOrmModule.forFeature([
       UserEntity,
       AdminEntity,

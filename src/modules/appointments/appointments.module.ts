@@ -7,9 +7,15 @@ import { ConsultationEntity } from './entities/consultation.entity';
 import { ExamEntity } from './entities/exam.entity';
 import { FollowUpEntity } from './entities/follow-up.entity';
 import { ScheduleEntity } from '../schedules/entities/schedule.entity';
+import { ProceduresModule } from '../procedures/procedures.module';
+import { MedicalRecordsModule } from '../medical-records/medical-records.module';
+import { ReportsModule } from '../reports/reports.module';
 
 @Module({
   imports: [
+    ProceduresModule,
+    MedicalRecordsModule,
+    ReportsModule,
     TypeOrmModule.forFeature([
       AppointmentEntity,
       ConsultationEntity,

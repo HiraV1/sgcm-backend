@@ -68,7 +68,7 @@ export class AppointmentsService {
           id: scheduleId,
         },
       },
-      relations: ['doctor', 'patient', 'schedule'],
+      relations: ['schedule'],
     });
 
     if (existingAppointment) {
@@ -126,7 +126,6 @@ export class AppointmentsService {
 
       status: AppointmentStatus.IN_PROGRESS,
     });
-    console.log(appointment);
 
     console.log('Antes de salvar');
     const saved = await this.consultationRepository.save(appointment);
@@ -141,6 +140,7 @@ export class AppointmentsService {
     const appointment = this.examRepository.create({
       type: AppointmentType.EXAM,
       examType: dto.examType,
+      startedAt: new Date(),
 
       schedule,
       doctor: schedule.doctor,
@@ -150,7 +150,6 @@ export class AppointmentsService {
     });
 
     const saved = await this.examRepository.save(appointment);
-
     return mapAppointmentResponse(saved);
   }
 
@@ -179,6 +178,7 @@ export class AppointmentsService {
       type: AppointmentType.FOLLOW_UP,
       clinicalEvolution: dto.clinicalEvolution,
       originAppointmentId: dto.originAppointmentId,
+      startedAt: new Date(),
 
       schedule,
       doctor: schedule.doctor,
@@ -188,7 +188,6 @@ export class AppointmentsService {
     });
 
     const saved = await this.followUpRepository.save(appointment);
-
     return mapAppointmentResponse(saved);
   }
 

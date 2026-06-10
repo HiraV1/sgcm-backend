@@ -4,6 +4,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   TableInheritance,
@@ -14,6 +15,7 @@ import { AppointmentType } from '../enums/appointment-type.enum';
 import { DoctorEntity } from 'src/modules/users/entities/doctor.entity';
 import { PatientEntity } from 'src/modules/users/entities/patient.entity';
 import { ScheduleEntity } from '../../schedules/entities/schedule.entity';
+import { ProcedureEntity } from 'src/modules/procedures/entities/procedure.entity';
 
 @Entity('appointments')
 @TableInheritance({
@@ -57,6 +59,12 @@ export abstract class AppointmentEntity {
   @OneToOne(() => ScheduleEntity)
   @JoinColumn()
   schedule!: ScheduleEntity;
+
+  @OneToMany(
+    () => ProcedureEntity,
+    (procedureEntity) => procedureEntity.appointment,
+  )
+  procedures!: ProcedureEntity[];
 
   @CreateDateColumn()
   createdAt!: Date;
