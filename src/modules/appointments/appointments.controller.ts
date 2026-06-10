@@ -41,6 +41,9 @@ import { AuthorizationStatus } from '../procedures/enums/procedure-authorization
 import { MedicalRecordResponseDto } from '../medical-records/dto/response/medical-record-response.dto';
 import { CreateMedicalRecordDto } from '../medical-records/dto/create-medical-record.dto';
 import { MedicalRecordsService } from '../medical-records/medical-records.service';
+import { CreateReportDto } from '../reports/dto/create-report.dto';
+import { ReportsService } from '../reports/reports.service';
+import { ReportResponseDto } from '../reports/dto/response/report-response.dto';
 
 @ApiBearerAuth('JWT-auth')
 @Controller('appointments')
@@ -49,6 +52,7 @@ export class AppointmentsController {
     private readonly appointmentsService: AppointmentsService,
     private readonly proceduresService: ProceduresService,
     private readonly medicalRecordsService: MedicalRecordsService,
+    private readonly reportsService: ReportsService,
   ) {}
 
   @Auth(UserType.ADMIN, UserType.DOCTOR)
@@ -118,7 +122,6 @@ export class AppointmentsController {
   create(
     @Body() dto: CreateConsultationDto | CreateExamDto | CreateFollowUpDto,
   ) {
-    console.log(dto);
     return this.appointmentsService.create(dto);
   }
 
@@ -546,5 +549,49 @@ export class AppointmentsController {
       appointmentId,
       currentUser,
     );
+  }
+
+  // REPORTS MODULE
+  @Auth(UserType.ADMIN, UserType.DOCTOR)
+  @Post(':id/report')
+  @ApiOperation({
+    summary: 'Issue a report for a finished exam',
+  })
+  @ApiParam({
+    name: 'id',
+    example: 1,
+    description: 'Exam appointment ID',
+  })
+  @ApiBody({
+    type: CreateReportDto,
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Report issued successfully',
+    type: ReportResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Appointment is not an exam, is not finished, or exam result is missing',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'You can only issue reports for your own appointments',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Appointment not found',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'An active report already exists for this exam',
+  })
+  createReport(
+    @Param('id', ParseIntPipe) appointmentId: number,
+    @Body() dto: CreateReportDto,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return this.reportsService.create(appointmentId, dto, currentUser);
   }
 }

@@ -11,7 +11,7 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { MedicalRecordResponseDto } from './dto/response/medical-record-response.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AppointmentEntity } from '../appointments/entities/appointment.entity';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, Repository } from 'typeorm';
 import { MedicalRecordEntity } from './entities/medical-record.entity';
 import { UserType } from '../users/enums/user-type.enum';
 import { AppointmentStatus } from '../appointments/enums/appointment-status.enum';
@@ -257,15 +257,28 @@ export class MedicalRecordsService {
 
     const skip = (page - 1) * limit;
 
+    const where: FindOptionsWhere<MedicalRecordEntity> = {
+      appointment: {
+        patient: {
+          id: patientId,
+        },
+      },
+    };
+
+    if (currentUser.type === UserType.DOCTOR) {
+      where.appointment = {
+        patient: {
+          id: patientId,
+        },
+        doctor: {
+          id: currentUser.sub,
+        },
+      };
+    }
+
     const [records, totalItems] =
       await this.medicalRecordsRepository.findAndCount({
-        where: {
-          appointment: {
-            patient: {
-              id: patientId,
-            },
-          },
-        },
+        where,
         relations: [
           'appointment',
           'appointment.doctor',
