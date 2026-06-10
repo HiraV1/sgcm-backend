@@ -8,6 +8,7 @@ import {
   ApiParam,
   ApiQuery,
   ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
 import { PatientResponseDto } from './dto/response/patient-response.dto';
 import { Auth } from '../auth/decorators/auth.decorator';
@@ -16,6 +17,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { MedicalRecordsService } from '../medical-records/medical-records.service';
 import { ReportsService } from '../reports/reports.service';
 
+@ApiTags('Patients')
 @ApiBearerAuth('JWT-auth')
 @Controller('patients')
 export class PatientsController {

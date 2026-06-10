@@ -17,6 +17,7 @@ import {
   ApiParam,
   ApiProduces,
   ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
 import { ValidateReportResponseDto } from './dto/response/validate-report-response.dto';
 import { Auth } from '../auth/decorators/auth.decorator';
@@ -27,6 +28,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { Response } from 'express';
 
+@ApiTags('Reports')
 @ApiBearerAuth('JWT-auth')
 @Controller('reports')
 export class ReportsController {
@@ -103,6 +105,14 @@ export class ReportsController {
   @ApiProduces('application/pdf')
   @ApiOkResponse({
     description: 'PDF report file',
+    content: {
+      'application/pdf': {
+        schema: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 403,

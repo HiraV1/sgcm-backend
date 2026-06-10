@@ -32,13 +32,33 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('SGCM API')
-    .setDescription('Sistema de Gestão de Clínica Médica')
-    .setVersion('1.0')
+    .setDescription(
+      `
+        API completa para gerenciamento de clínica médica, cobrindo o ciclo clínico do agendamento ao laudo.
+
+        ## Autenticação
+        A maioria dos endpoints requer autenticação JWT. Para autenticar:
+        1. Faça login em \`POST /auth/login\` com e-mail e senha.
+        2. Copie o \`accessToken\` retornado.
+        3. Clique em **Authorize** no topo desta página e insira o token no formato \`{token}\`.
+
+        ## Perfis de Usuário
+        - **Admin**: acesso irrestrito a todos os recursos.
+        - **Doctor**: acesso aos próprios atendimentos, procedimentos e laudos.
+        - **Patient**: acesso aos próprios agendamentos, prontuários e laudos.
+
+        ## Endpoint Público
+        O endpoint \`GET /reports/validate/{code}\` não requer autenticação e pode ser usado
+        por qualquer pessoa para verificar a autenticidade de um laudo emitido pelo sistema.
+      `,
+    )
+    .setVersion('3.0')
     .addBearerAuth(
       {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
+        description: 'token JWT obtido em POST /auth/login',
       },
       'JWT-auth',
     )
