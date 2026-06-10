@@ -16,6 +16,7 @@ import {
   ApiParam,
   ApiQuery,
   ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { DoctorResponseDto } from './dto/response/doctor-response.dto';
@@ -29,6 +30,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { MedicalRecordsService } from '../medical-records/medical-records.service';
 import { ReportsService } from '../reports/reports.service';
 
+@ApiTags('Doctors')
 @ApiBearerAuth('JWT-auth')
 @Controller('doctors')
 export class DoctorsController {

@@ -19,6 +19,7 @@ import { AppointmentsModule } from './modules/appointments/appointments.module';
 import { ProceduresModule } from './modules/procedures/procedures.module';
 import { MedicalRecordsModule } from './modules/medical-records/medical-records.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { AdminReportsModule } from './modules/admin-reports/admin-reports.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { ReportsModule } from './modules/reports/reports.module';
     ProceduresModule,
     MedicalRecordsModule,
     ReportsModule,
+    AdminReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: JwtAuthGuard }],

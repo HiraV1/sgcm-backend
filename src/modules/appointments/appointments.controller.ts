@@ -19,6 +19,7 @@ import {
   ApiParam,
   ApiQuery,
   ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { UserType } from '../users/enums/user-type.enum';
@@ -45,6 +46,7 @@ import { CreateReportDto } from '../reports/dto/create-report.dto';
 import { ReportsService } from '../reports/reports.service';
 import { ReportResponseDto } from '../reports/dto/response/report-response.dto';
 
+@ApiTags('Appointments')
 @ApiBearerAuth('JWT-auth')
 @Controller('appointments')
 export class AppointmentsController {

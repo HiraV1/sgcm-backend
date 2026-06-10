@@ -9,11 +9,13 @@ import {
   ApiOperation,
   ApiParam,
   ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger';
 import { MedicalRecordResponseDto } from './dto/response/medical-record-response.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
+@ApiTags('Medical Records')
 @ApiBearerAuth('JWT-auth')
 @Controller('records')
 export class MedicalRecordsController {
