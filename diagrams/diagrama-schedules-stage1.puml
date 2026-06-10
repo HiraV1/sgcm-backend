@@ -1,0 +1,211 @@
+@startuml
+
+skinparam groupInheritance 2
+skinparam classFontStyle bold
+skinparam classBackgroundColor #FAFAFA
+skinparam classBorderColor #5A7FAF
+skinparam arrowColor #5A7FAF
+skinparam noteBorderColor #E8A838
+skinparam noteBackgroundColor #FFF8E7
+skinparam enumBackgroundColor #F0F4FF
+skinparam enumBorderColor #5A7FAF
+hide empty members
+
+' ================================
+' REFERÊNCIAS EXTERNAS
+' ================================
+
+package "External References" #F5F5F5 {
+
+  class Doctor {
+  }
+
+  class Patient {
+  }
+
+  class Admin {
+  }
+
+  class Appointment {
+  }
+
+}
+
+
+' ================================
+' AGENDAMENTOS
+' ================================
+
+package "Schedules" #FFF3E0 {
+
+  abstract class Schedule {
+    + id: number
+    + scheduledAt: Date
+    + status: ScheduleStatus
+    + type: ScheduleType
+    + patient: Patient
+    + doctor: Doctor
+    + cancelledAt: Date
+    + cancelledBy: User
+    + cancellationReason: string
+    + createdAt: Date
+    + createdBy: User
+    + updatedAt: Date
+    ---
+    + confirm(): void
+    + cancel(reason: string): void
+    + complete(): void
+    + isCancellable(): boolean
+    + isConfirmable(): boolean
+  }
+
+  class InPersonSchedule {
+    + room: string
+    + unit: string
+  }
+
+  class OnlineSchedule {
+    + accessLink: string
+    + platform: string
+  }
+
+  class HomeSchedule {
+    + fullAddress: string
+    + accessNotes: string
+  }
+
+  together {
+    enum ScheduleStatus {
+      PENDING
+      CONFIRMED
+      CANCELLED
+      COMPLETED
+    }
+
+    enum ScheduleType {
+      IN_PERSON
+      ONLINE
+      HOME
+    }
+  }
+
+  note right of Schedule::status
+    Transições de status permitidas:
+    PENDING → CONFIRMED
+    PENDING → CANCELLED
+    CONFIRMED → CANCELLED
+    CONFIRMED → COMPLETED
+    --
+    Transições são irreversíveis.
+    Um Schedule CANCELLED ou COMPLETED
+    não pode mudar de status novamente.
+    --
+    [Stage-1] COMPLETED não é aceito
+    via PATCH /schedules/:id/status.
+    A transição CONFIRMED → COMPLETED
+    ocorrerá na Etapa 3 via
+    AppointmentsService de forma atômica.
+    --
+    [Stage-1] Um médico não pode ter
+    dois agendamentos CONFIRMED no
+    mesmo horário — verificado em
+    SchedulesService.checkDoctorConflict()
+    retorna 409 Conflict.
+  end note
+
+  note right of Schedule::cancelledAt
+    cancelledAt, cancellationReason e cancelledBy
+    são preenchidos apenas quando status = CANCELLED.
+    --
+    [Stage-1] cancelledAt e cancellationReason
+    preenchidos automaticamente em updateStatus().
+    cancelledBy permanece nulo até a Etapa 2
+    quando @CurrentUser() estará disponível.
+  end note
+
+  note right of Schedule::cancelledBy
+    cancelledBy rastreia quem cancelou — Admin ou Patient.
+    --
+    [Stage-1] Campo nulo — sem autenticação.
+    Será preenchido na Etapa 2.
+  end note
+
+  note right of Schedule::createdBy
+    createdBy rastreia quem criou o agendamento:
+    Admin (recepção) ou Patient (via aplicativo).
+    --
+    [Stage-1] Campo nulo — sem autenticação.
+    Será preenchido na Etapa 2.
+  end note
+
+  note right of Schedule::complete
+    complete() representa a transição para COMPLETED
+    e deve ser implementado no SchedulesService como
+    um método interno — não exposto como endpoint público.
+    --
+    Ele será chamado pelo AppointmentsService na Etapa 3
+    durante a criação de um atendimento.
+    O SchedulesModule exporta o SchedulesService para que
+    o AppointmentsModule possa invocar esse método
+    sem acoplamento indevido.
+  end note
+
+  note right of Schedule
+    [Stage-1] Herança implementada via
+    STI (Single Table Inheritance) com
+    @TableInheritance e @ChildEntity
+    do TypeORM.
+    --
+    Listagens mistas (todos os agendamentos
+    de um médico) funcionam em uma única
+    query sem joins adicionais.
+    --
+    Exclusão de Schedule com status
+    COMPLETED retorna 409 Conflict.
+  end note
+
+  note bottom of InPersonSchedule
+    room e unit são obrigatórios
+    para agendamentos presenciais.
+    Devem ser validados no DTO
+    específico desta subclasse.
+  end note
+
+  note bottom of OnlineSchedule
+    accessLink deve ser uma URL
+    válida. platform indica o
+    serviço utilizado —
+    ex: Google Meet, Zoom, Teams.
+  end note
+
+  note bottom of HomeSchedule
+    fullAddress é obrigatório
+    e deve conter endereço
+    completo para localização.
+    accessNotes é opcional —
+    ex: portão azul, tocar campainha.
+  end note
+
+}
+
+' ================================
+' RELACIONAMENTOS
+' ================================
+
+Admin -d[hidden]- Doctor
+Doctor -d[hidden]- Patient
+Patient -d[hidden]- Appointment
+
+Admin "0..1" -r-o "0..*" Schedule : gerencia >
+Doctor "1" -r-o "0..*" Schedule : realiza >
+Patient "1" -r-o "0..*" Schedule : possui >
+
+Schedule "1" -r-> "0..1" Appointment : origina >
+
+  Schedule -u-> ScheduleStatus : status
+  Schedule -u-> ScheduleType : type
+
+  Schedule <|-- InPersonSchedule
+  Schedule <|-- OnlineSchedule
+  Schedule <|-- HomeSchedule
+@enduml
