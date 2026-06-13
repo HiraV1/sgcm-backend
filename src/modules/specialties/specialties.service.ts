@@ -2,7 +2,6 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
 import { CreateSpecialtyDto } from './dto/create-specialty.dto';
 import { UpdateSpecialtyDto } from './dto/update-specialty.dto';
@@ -126,10 +125,39 @@ export class SpecialtiesService {
     }
 
     if (specialty.doctors && specialty.doctors.length > 0) {
-      throw new BadRequestException(
+      throw new ConflictException(
         'A especialidade não pode ser apagada porque existem médicos associados a ela.',
       );
     }
     return await this.specialtyRepository.remove(specialty);
   }
+  async findDoctorsBySpecialty(
+  id: number,
+  paginationQuery: PaginationQueryDto,
+): Promise<PaginatedResponse<any>> {
+  const specialty = await this.specialtyRepository.findOne({
+    where: { id },
+    relations: ['doctors', 'doctors.specialties'],
+  });
+
+  if (!specialty) {
+    throw new NotFoundException(`Specialty not found with ID ${id}`);
+  }
+
+  const { page = 1, limit = 20 } = paginationQuery;
+  const skip = (page - 1) * limit;
+
+  const activeDoctors = specialty.doctors.filter((d) => d.isActive);
+  const paginated = activeDoctors.slice(skip, skip + limit);
+
+  return {
+    data: paginated,
+    meta: {
+      totalItems: activeDoctors.length,
+      page,
+      limit,
+      totalPages: Math.ceil(activeDoctors.length / limit),
+    },
+  };
+}
 }
