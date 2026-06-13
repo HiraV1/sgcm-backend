@@ -163,16 +163,22 @@ export class AppointmentsService {
       where: {
         id: dto.originAppointmentId,
       },
-      relations: ['patient'],
+      relations: ['patient', 'schedule'],
     });
 
     if (!originAppointment) {
       throw new NotFoundException('Origin appointment not found');
     }
 
-    if (originAppointment.patient.id !== schedule.patient.id) {
+     if (originAppointment.patient.id !== schedule.patient.id) {
       throw new BadRequestException(
         'Follow-up must reference an appointment from the same patient',
+      );
+    }
+
+    if (originAppointment.schedule.id === schedule.id) {
+      throw new BadRequestException(
+        'A follow-up cannot reference an appointment from the same schedule',
       );
     }
 
