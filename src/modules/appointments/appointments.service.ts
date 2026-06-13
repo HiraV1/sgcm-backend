@@ -11,7 +11,7 @@ import { ConsultationEntity } from './entities/consultation.entity';
 import { ExamEntity } from './entities/exam.entity';
 import { FollowUpEntity } from './entities/follow-up.entity';
 import { ScheduleEntity } from '../schedules/entities/schedule.entity';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { ScheduleStatus } from '../schedules/enums/schedule-status.enum';
 import { AppointmentType } from './enums/appointment-type.enum';
 import { AppointmentStatus } from './enums/appointment-status.enum';
@@ -44,6 +44,8 @@ export class AppointmentsService {
 
     @InjectRepository(ScheduleEntity)
     private readonly scheduleRepository: Repository<ScheduleEntity>,
+
+    private readonly dataSource: DataSource,
   ) {}
 
   private async validateSchedule(scheduleId: number): Promise<ScheduleEntity> {
@@ -419,12 +421,28 @@ export class AppointmentsService {
     appointment.status = AppointmentStatus.FINISHED;
     appointment.endedAt = new Date();
 
-    await this.scheduleRepository.update(appointment.schedule.id, {
-      status: ScheduleStatus.COMPLETED,
-    });
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    const saved = await this.appointmentRepository.save(appointment);
+    try {
+      await queryRunner.manager.update(ScheduleEntity, appointment.schedule.id, {
+        status: ScheduleStatus.COMPLETED,
+      });
 
-    return mapAppointmentResponse(saved);
-  }
+      const saved = await queryRunner.manager.save(
+        AppointmentEntity,
+        appointment,
+      );
+
+      await queryRunner.commitTransaction();
+
+      return mapAppointmentResponse(saved);
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }  
 }
