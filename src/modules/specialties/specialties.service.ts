@@ -131,6 +131,7 @@ export class SpecialtiesService {
     }
     return await this.specialtyRepository.remove(specialty);
   }
+  
   async findDoctorsBySpecialty(
   id: number,
   paginationQuery: PaginationQueryDto,
