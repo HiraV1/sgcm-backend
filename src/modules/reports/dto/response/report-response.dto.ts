@@ -16,6 +16,8 @@ export class ReportResponseDto {
 
   revokedReason?: string;
 
+  revokedBy?: number;
+
   doctorId!: number;
 
   patientId!: number;
@@ -39,6 +41,7 @@ export class ReportResponseDto {
 
     this.revokedAt = report.revokedAt;
     this.revokedReason = report.revokedReason;
+    this.revokedBy = report.revokedBy;
 
     this.doctorId = report.doctor.id;
     this.patientId = report.patient.id;

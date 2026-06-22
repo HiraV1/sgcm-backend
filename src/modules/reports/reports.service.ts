@@ -180,8 +180,10 @@ export class ReportsService {
 
     report.revokedReason = dto.revokedReason;
 
-    const saved = await this.reportsRepository.save(report);
+    report.revokedBy = currentUser.sub;
 
+    const saved = await this.reportsRepository.save(report);
+    
     return new ReportResponseDto(saved);
   }
 
