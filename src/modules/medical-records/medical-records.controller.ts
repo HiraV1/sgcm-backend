@@ -1,4 +1,4 @@
-import { Body, Controller, Param, ParseIntPipe, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Param, ParseIntPipe, Put } from '@nestjs/common';
 import { MedicalRecordsService } from './medical-records.service';
 import { UpdateMedicalRecordDto } from './dto/update-medical-record.dto';
 import { Auth } from '../auth/decorators/auth.decorator';
@@ -64,4 +64,22 @@ export class MedicalRecordsController {
   ) {
     return this.medicalRecordsService.update(id, dto, currentUser);
   }
+   @Auth(UserType.ADMIN, UserType.DOCTOR, UserType.PATIENT)
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'Delete a medical record (not allowed)',
+  })
+  @ApiParam({
+    name: 'id',
+    example: 1,
+    description: 'Medical record ID',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Medical records cannot be deleted',
+  })
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.medicalRecordsService.remove(id);
+  }
 }
+

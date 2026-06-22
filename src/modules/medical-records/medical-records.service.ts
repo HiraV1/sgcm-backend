@@ -208,7 +208,9 @@ export class MedicalRecordsService {
   }
 
   remove(id: number) {
-    return `This action removes a #${id} medicalRecord`;
+    throw new ConflictException(
+      'Medical records cannot be deleted as they are permanent clinical documents',
+    );
   }
 
   async findPatientRecords(
