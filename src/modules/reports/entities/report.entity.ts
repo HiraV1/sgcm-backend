@@ -47,6 +47,11 @@ export class ReportEntity {
   })
   revokedReason?: string;
 
+  @Column({
+    nullable: true,
+  })
+  revokedBy?: number;
+
   @ManyToOne(() => DoctorEntity, {
     nullable: false,
   })
