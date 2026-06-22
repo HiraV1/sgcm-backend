@@ -79,10 +79,17 @@ export class ProceduresService {
       );
     }
 
-    if (
-      currentUser.type !== UserType.ADMIN &&
-      currentUser.sub !== appointment.doctor.id
-    ) {
+    if (currentUser.type === UserType.ADMIN) {
+      return;
+    }
+
+    const isDoctor = currentUser.type === UserType.DOCTOR &&
+      currentUser.sub === appointment.doctor.id;
+
+    const isPatient = currentUser.type === UserType.PATIENT &&
+      currentUser.sub === appointment.patient.id;
+
+    if (!isDoctor && !isPatient) {
       throw new ForbiddenException('You can only access your appointment');
     }
   }
@@ -161,10 +168,17 @@ export class ProceduresService {
       throw new NotFoundException(`Procedure not found with ID ${id}`);
     }
 
-    if (
-      currentUser.type !== UserType.ADMIN &&
-      currentUser.sub !== procedure.appointment.doctor.id
-    ) {
+    if (currentUser.type === UserType.ADMIN) {
+      return mapProcedureResponse(procedure);
+    }
+
+    const isDoctor = currentUser.type === UserType.DOCTOR &&
+      currentUser.sub === procedure.appointment.doctor.id;
+
+    const isPatient = currentUser.type === UserType.PATIENT &&
+      currentUser.sub === procedure.appointment.patient.id;
+
+    if (!isDoctor && !isPatient) {
       throw new ForbiddenException('You can only access your procedures');
     }
 

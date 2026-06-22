@@ -32,7 +32,7 @@ import { ProcedureAuthorizationDto } from './dto/procedure-authorization.dto';
 export class ProceduresController {
   constructor(private readonly proceduresService: ProceduresService) {}
 
-  @Auth(UserType.ADMIN, UserType.DOCTOR)
+  @Auth(UserType.ADMIN, UserType.DOCTOR, UserType.PATIENT)
   @Get(':id')
   @ApiOperation({
     summary: 'Find a procedure by id',

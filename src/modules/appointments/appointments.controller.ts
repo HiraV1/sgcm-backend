@@ -396,7 +396,7 @@ export class AppointmentsController {
     return this.proceduresService.create(appointmentId, dto, currentUser);
   }
 
-  @Auth(UserType.ADMIN, UserType.DOCTOR)
+  @Auth(UserType.ADMIN, UserType.DOCTOR, UserType.PATIENT)
   @Get(':id/procedures')
   @ApiOperation({
     summary: 'List procedures associated with an appointment',
